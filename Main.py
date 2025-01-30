@@ -4,8 +4,8 @@ from tkinter import ttk
 from datetime import datetime
 #import os
 from screeninfo import get_monitors
-#import kundenanleg
-#import produkte
+import kundenanleg
+import produkte
 import hilfe
 
 # Globale Variablen, um Tabellen zu verfolgen
