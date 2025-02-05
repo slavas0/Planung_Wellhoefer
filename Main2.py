@@ -532,6 +532,7 @@ def starten(stall, kw, jahr, name):
     dieKW = kw
     dasjahr = jahr
     nexttime = [kw, jahr]
+    #mit main einblenden ersetzen
     main()
     print(f"Willkommen, {username}. Stall: {derstall}, KW: {dieKW}, Jahr: {dasjahr}")
 
