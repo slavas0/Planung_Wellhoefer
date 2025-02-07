@@ -5,7 +5,7 @@ import sys
 import sqlite3  # Importiere SQLite (oder passe dies für dein DBMS an)
 #import os
 import re
-from ttkbootstrap import Style, Window, Frame, Label, Entry, Button, Treeview, Scrollbar
+import ttkbootstrap as ttk
 from ttkbootstrap.constants import *
 
 username = "nutzer"
@@ -87,7 +87,7 @@ def kalenderwoche_monat(jahr, kw):
     return start_der_kw.month
 # Hauptfenster erstellen mit einem modernen Theme
 def create_main_window():
-    window = ttkboots.Window(themename="sandstone")
+    window = ttk.Window(themename="sandstone")
     window.title("Planungssystem")
     #window.geometry("1500x750")  # Fenstergröße
     window.geometry("1800x750")  # Fenstergröße
@@ -96,8 +96,8 @@ def create_main_window():
 # Scrollbar und Canvas erstellen
 def create_scrollable_area(root):
     canvas = Canvas(root)
-    scrollable_frame = ttkboots.Frame(canvas)
-    scrollbar = ttkboots.Scrollbar(root, orient="vertical", command=canvas.yview)
+    scrollable_frame = ttk.Frame(canvas)
+    scrollbar = ttk.Scrollbar(root, orient="vertical", command=canvas.yview)
     canvas.configure(yscrollcommand=scrollbar.set)
 
     # Scrollbar zuerst versteckt, erst sichtbar machen, wenn nötig
@@ -164,14 +164,14 @@ def enable_mouse_scroll(canvas):
 
 # Überschrift und Titel erstellen
 def create_title(root):
-    title_label = ttkboots.Label(root, text="Planungssystem", font=("Arial", 28, "bold"))
+    title_label = ttk.Label(root, text="Planungssystem", font=("Arial", 28, "bold"))
     title_label.pack(pady=10)
 
 # Funktion zum Erstellen der Spaltenüberschriften
 def create_headers(scrollable_frame):
     headers = ["Name", "Telefonnummer", "Stück Braun", "Stück Weiß", "Verhalten", "Preis", "Bemerkung"]
     for i, header in enumerate(headers):
-        label = ttkboots.Label(scrollable_frame, text=header, font=("Arial", 12, "bold"))
+        label = ttk.Label(scrollable_frame, text=header, font=("Arial", 12, "bold"))
         label.grid(row=2, column=i, padx=10, pady=10)
 
 # Dynamische Eintragsfunktion
@@ -185,38 +185,38 @@ def eintrag_hinzufuegen(scrollable_frame, id):
     numb = len(id_regist)
     id_regist.append(0)
     # Dynamisch erstellte Bestellungsfelder
-    name_entry = ttkboots.Entry(scrollable_frame)
+    name_entry = ttk.Entry(scrollable_frame)
     name_entry.grid(row=row_offset, column=0, padx=5, pady=5)
 
-    telefon_entry = ttkboots.Entry(scrollable_frame)
+    telefon_entry = ttk.Entry(scrollable_frame)
     telefon_entry.grid(row=row_offset, column=1, padx=5, pady=5)
 
-    braun_entry = ttkboots.Entry(scrollable_frame)
+    braun_entry = ttk.Entry(scrollable_frame)
     braun_entry.grid(row=row_offset, column=2, padx=5, pady=5)
 
-    weiss_entry = ttkboots.Entry(scrollable_frame)
+    weiss_entry = ttk.Entry(scrollable_frame)
     weiss_entry.grid(row=row_offset, column=3, padx=5, pady=5)
 
-    verhalten_entry = ttkboots.Entry(scrollable_frame)
+    verhalten_entry = ttk.Entry(scrollable_frame)
     verhalten_entry.grid(row=row_offset, column=4, padx=5, pady=5)
 
-    preis_entry = ttkboots.Entry(scrollable_frame)
+    preis_entry = ttk.Entry(scrollable_frame)
     preis_entry.grid(row=row_offset, column=5, padx=5, pady=5)
 
-    bemerkung_entry = ttkboots.Entry(scrollable_frame)
+    bemerkung_entry = ttk.Entry(scrollable_frame)
     bemerkung_entry.grid(row=row_offset, column=6, padx=5, pady=5)
 
     # Label für die ID, um sie unsichtbar zu machen
-    id_label = ttkboots.Label(scrollable_frame, text=id)
+    id_label = ttk.Label(scrollable_frame, text=id)
     id_label.grid(row=row_offset, column=7, padx=5, pady=5)  # Eine Spalte für die ID einfügen
     id_label.grid_remove()  # Das Label sofort verstecken
     # Label für die ID, um sie unsichtbar zu machen
-    number_label = ttkboots.Label(scrollable_frame, text=numb)
+    number_label = ttk.Label(scrollable_frame, text=numb)
     number_label.grid(row=row_offset, column=7, padx=5, pady=5)  # Eine Spalte für die ID einfügen
     number_label.grid_remove()  # Das Label sofort verstecken
 
     # Button zum Löschen des Eintrags
-    delete_button = ttkboots.Button(scrollable_frame, text="Löschen", command=lambda: delete_entry(scrollable_frame, id, numb), bootstyle=DANGER)
+    delete_button = ttk.Button(scrollable_frame, text="Löschen", command=lambda: delete_entry(scrollable_frame, id, numb), bootstyle=DANGER)
     delete_button.grid(row=row_offset, column=8, padx=5, pady=5)
 
     #id_entry.insert(0, id)
@@ -343,15 +343,15 @@ def speichern_daten(textfeld_braun, textfeld_weiss, textfeld3):
             conn.close()
 # Button zum Hinzufügen eines neuen Eintrags
 def create_add_button(root, scrollable_frame):
-    button_frame = ttkboots.Frame(root)
+    button_frame = ttk.Frame(root)
     button_frame.pack(pady=10)
 
-    hinzufuegen_button = ttkboots.Button(button_frame, text="Eintrag hinzufügen", command=lambda: eintrag_hinzufuegen(scrollable_frame, NONE), bootstyle=SUCCESS)
+    hinzufuegen_button = ttk.Button(button_frame, text="Eintrag hinzufügen", command=lambda: eintrag_hinzufuegen(scrollable_frame, NONE), bootstyle=SUCCESS)
     hinzufuegen_button.pack(side="left", padx=10)
 
 # Button zum Speichern der Einträge
 def create_save_button(root, textfeld_braun, textfeld_weiss, textfeld3):
-    speichern_button = ttkboots.Button(root, text="Speichern",
+    speichern_button = ttk.Button(root, text="Speichern",
                                   command=lambda: speichern_daten(textfeld_braun, textfeld_weiss, textfeld3),
                                   bootstyle=PRIMARY)
     speichern_button.pack(pady=10)
@@ -407,16 +407,16 @@ def update_scrollregion(scrollable_frame):
 def create_footer(root):
     global derstall, dieKW, dasjahr
 
-    footer_frame = ttkboots.Frame(root)
+    footer_frame = ttk.Frame(root)
     footer_frame.pack(side="bottom", fill="x", pady=10)
 
-    gesamt_label = ttkboots.Label(footer_frame, text="Gesamte bestellte Tieranzahl", font=("Arial", 12, "bold"))
+    gesamt_label = ttk.Label(footer_frame, text="Gesamte bestellte Tieranzahl", font=("Arial", 12, "bold"))
     gesamt_label.pack(side="left", padx=10)
 
-    braun_summe_label = ttkboots.Label(footer_frame, font=("Arial", 12))
+    braun_summe_label = ttk.Label(footer_frame, font=("Arial", 12))
     braun_summe_label.pack(side="left", padx=10)
 
-    weiss_summe_label = ttkboots.Label(footer_frame, font=("Arial", 12))
+    weiss_summe_label = ttk.Label(footer_frame, font=("Arial", 12))
     weiss_summe_label.pack(side="left", padx=10)
     def berechne_summen():
         conn = sqlite3.connect('datenbank/diedatenbank.db')
@@ -439,13 +439,13 @@ def create_footer(root):
     # Initialisierung der Summen-Labels
     berechne_summen()
 
-    ubrig_label = ttkboots.Label(footer_frame, text="Übrige Tieranzahl", font=("Arial", 12, "bold"))
+    ubrig_label = ttk.Label(footer_frame, text="Übrige Tieranzahl", font=("Arial", 12, "bold"))
     ubrig_label.pack(side="left", padx=10)
 
-    braun_ubrig_label = ttkboots.Label(footer_frame, font=("Arial", 12))
+    braun_ubrig_label = ttk.Label(footer_frame, font=("Arial", 12))
     braun_ubrig_label.pack(side="left", padx=10)
 
-    weiss_ubrig_label = ttkboots.Label(footer_frame, font=("Arial", 12))
+    weiss_ubrig_label = ttk.Label(footer_frame, font=("Arial", 12))
     weiss_ubrig_label.pack(side="left", padx=10)
     def berechne_ubrig():
         conn = sqlite3.connect('datenbank/diedatenbank.db')
@@ -473,16 +473,16 @@ def create_footer(root):
     berechne_ubrig()
 # Funktion zum Begrüßen des Benutzers
 def create_welcome_label(root):
-    welcome_label = ttkboots.Label(root, text=f"Willkommen, {username}!", font=("Arial", 16))
+    welcome_label = ttk.Label(root, text=f"Willkommen, {username}!", font=("Arial", 16))
     welcome_label.pack(pady=10)
 # Text "Stall 2 KW 7 2024" hinzufügen
 def create_large_text(root):
     txt = derstall + " - KW " + str(dieKW) + " " + str(dasjahr)
-    large_text_label = ttkboots.Label(root, text=txt, font=("Arial", 20, "bold"))
+    large_text_label = ttk.Label(root, text=txt, font=("Arial", 20, "bold"))
     large_text_label.pack(pady=10)
     txt2a, txt2b = kalenderwoche_daten(dasjahr, dieKW)
     txt2 = f"Woche vom {txt2a}\n bis {txt2b}"
-    large_text2_label = ttkboots.Label(root, text=txt2, font=("Arial", 20, "bold"))
+    large_text2_label = ttk.Label(root, text=txt2, font=("Arial", 20, "bold"))
     large_text2_label.pack(pady=10)
 def select_kw_jahr_stall(neukw, neustall, neujahr):
     root.destroy()  # Schließe das aktuelle
@@ -517,16 +517,16 @@ def month_to_kw(month, jahr, stall):
     kw = erster_montag_kw(month, jahr)
     select_kw_jahr_stall(kw, stall, jahr)
 def create_last_items_tabs(root):
-    last_items_frame = ttkboots.Frame(root)
+    last_items_frame = ttk.Frame(root)
     last_items_frame.pack(side="bottom", fill="x", pady=10)
     monate = ["Januar", "Februar", "März", "April", "Mai", "Juni", "Juli", "August", "September", "Oktober", "November", "Dezember"]
     lastitemsdef()
     # Gehe durch jeden Eintrag in lastitems und erstelle einen Tab/Button dafür
     for idx, item in enumerate(lastitems):
         tab_text = f"{item[0]} - {monate[item[1]-1]} {item[2]}"
-        last_item_tab = ttkboots.Button(last_items_frame, text=tab_text, bootstyle=SECONDARY)
+        last_item_tab = ttk.Button(last_items_frame, text=tab_text, bootstyle=SECONDARY)
         # Erstelle den Button und weise eine Funktion zu, die select_kw_jahr_stall aufruft
-        last_item_tab = ttkboots.Button(last_items_frame,
+        last_item_tab = ttk.Button(last_items_frame,
                                    text=tab_text,
                                    bootstyle=SECONDARY,
                                    command=lambda i=item: month_to_kw(i[1], i[2], i[0]))
@@ -602,19 +602,19 @@ def main():
     create_large_text(root)
     # Neue Textfelder hinzufügen (z.B. in der zweiten Zeile)
     braun, weiss, lila = eingang_db_abfragen()
-    label = ttkboots.Label(scrollable_frame, text="Braune", font=("Arial", 12, "bold"))
+    label = ttk.Label(scrollable_frame, text="Braune", font=("Arial", 12, "bold"))
     label.grid(row=0, column=0, padx=10, pady=10)
-    textfeld_braun = ttkboots.Entry(scrollable_frame)
+    textfeld_braun = ttk.Entry(scrollable_frame)
     textfeld_braun.grid(row=1, column=0, padx=5, pady=5)
 
-    label = ttkboots.Label(scrollable_frame, text="Weiße", font=("Arial", 12, "bold"))
+    label = ttk.Label(scrollable_frame, text="Weiße", font=("Arial", 12, "bold"))
     label.grid(row=0, column=1, padx=10, pady=10)
-    textfeld_weiss = ttkboots.Entry(scrollable_frame)
+    textfeld_weiss = ttk.Entry(scrollable_frame)
     textfeld_weiss.grid(row=1, column=1, padx=5, pady=5)
 
-    label = ttkboots.Label(scrollable_frame, text="Anmerkung", font=("Arial", 12, "bold"))
+    label = ttk.Label(scrollable_frame, text="Anmerkung", font=("Arial", 12, "bold"))
     label.grid(row=0, column=2, padx=10, pady=10)
-    textfeld3 = ttkboots.Entry(scrollable_frame)
+    textfeld3 = ttk.Entry(scrollable_frame)
     textfeld3.grid(row=1, column=2, padx=5, pady=5)
 
     textfeld_braun.insert(0, braun)
@@ -626,7 +626,7 @@ def main():
     create_save_button(root, textfeld_braun, textfeld_weiss, textfeld3)
 
     # Refresh-Button
-    wechsel_button = ttkboots.Button(root, text="Refresh",
+    wechsel_button = ttk.Button(root, text="Refresh",
                                 command=lambda: select_kw_jahr_stall(nexttime[0], nextstall, nexttime[1]))
     wechsel_button.pack(pady=10)
     def abmelden():
@@ -636,55 +636,55 @@ def main():
         Main.starten()
         #os.system(f"python Main.py")
     # Refresh-Button
-    abmelden_button = ttkboots.Button(root, text="Abmelden",
+    abmelden_button = ttk.Button(root, text="Abmelden",
                                 command=lambda: abmelden(), bootstyle=DANGER)
     abmelden_button.pack(pady=10)
     # Buttons mit großen Pfeilen nach links und rechts für nextKW
-    arrow_frame_1 = ttkboots.Frame(root)
+    arrow_frame_1 = ttk.Frame(root)
     arrow_frame_1.pack(pady=5)
 
-    left_arrow_1 = ttkboots.Button(arrow_frame_1, text="<<",
+    left_arrow_1 = ttk.Button(arrow_frame_1, text="<<",
                               command=lambda: update_next_kw(-10), width=5)
     left_arrow_1.pack(side="left", padx=5)
 
-    left_arrow_12 = ttkboots.Button(arrow_frame_1, text="<",
+    left_arrow_12 = ttk.Button(arrow_frame_1, text="<",
                               command=lambda: update_next_kw(-1), width=5)
     left_arrow_12.pack(side="left", padx=5)
 
     # Label für nextKW
-    next_kw_label = ttkboots.Label(arrow_frame_1, text=str(nexttime[0]))
+    next_kw_label = ttk.Label(arrow_frame_1, text=str(nexttime[0]))
     next_kw_label.pack(side="left", padx=5)
 
-    right_arrow_1 = ttkboots.Button(arrow_frame_1, text=">",
+    right_arrow_1 = ttk.Button(arrow_frame_1, text=">",
                                command=lambda: update_next_kw(1), width=5)
     right_arrow_1.pack(side="left", padx=5)
-    right_arrow_12 = ttkboots.Button(arrow_frame_1, text=">>",
+    right_arrow_12 = ttk.Button(arrow_frame_1, text=">>",
                                command=lambda: update_next_kw(10), width=5)
     right_arrow_12.pack(side="left", padx=5)
 
     # Zweite Zeile mit Buttons für nextstall
-    arrow_frame_2 = ttkboots.Frame(root)
+    arrow_frame_2 = ttk.Frame(root)
     arrow_frame_2.pack(pady=5)
 
-    left_arrow_2 = ttkboots.Button(arrow_frame_2, text="<",
+    left_arrow_2 = ttk.Button(arrow_frame_2, text="<",
                               command=lambda: next_stall(-1), width=5)
     left_arrow_2.pack(side="left", padx=5)
 
     # Label für nextstall
-    next_stall_label = ttkboots.Label(arrow_frame_2, text=str(nextstall))
+    next_stall_label = ttk.Label(arrow_frame_2, text=str(nextstall))
     next_stall_label.pack(side="left", padx=5)
 
-    right_arrow_2 = ttkboots.Button(arrow_frame_2, text=">",
+    right_arrow_2 = ttk.Button(arrow_frame_2, text=">",
                                command=lambda: next_stall(1), width=5)
     right_arrow_2.pack(side="left", padx=5)
 
     # Zweite Zeile mit Buttons für nextstall
-    arrow_frame_2 = ttkboots.Frame(root)
+    arrow_frame_2 = ttk.Frame(root)
     arrow_frame_2.pack(pady=5)
 
     # Eingabefeld für nextstall
-    next_stall_var = ttkboots.StringVar(value=str(nextstall))  # Variabel, um Wert zu binden
-    next_stall_entry = ttkboots.Entry(arrow_frame_2, textvariable=next_stall_var, justify="center", width=10)
+    next_stall_var = ttk.StringVar(value=str(nextstall))  # Variabel, um Wert zu binden
+    next_stall_entry = ttk.Entry(arrow_frame_2, textvariable=next_stall_var, justify="center", width=10)
     next_stall_entry.pack(side="left", padx=5)
 
     # Event, um Eingabe zu bestätigen
