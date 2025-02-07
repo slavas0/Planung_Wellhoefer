@@ -7,6 +7,7 @@ import sqlite3  # Importiere SQLite (oder passe dies für dein DBMS an)
 import re
 import ttkbootstrap as ttk
 from ttkbootstrap.constants import *
+import Main
 
 username = "nutzer"
 derstall = "Stall 2"
@@ -17,6 +18,7 @@ lastitems = []
 allestalle = []
 nextstall = derstall
 nexttime = [dieKW, dasjahr]
+
 def lastitemsdef():
     global lastitems
     conn = sqlite3.connect('datenbank/diedatenbank.db')  # Ersetze 'deine_datenbank.db' durch den Pfad deiner Datenbank
@@ -88,7 +90,7 @@ def kalenderwoche_monat(jahr, kw):
 # Hauptfenster erstellen mit einem modernen Theme
 def create_main_window():
     window = ttk.Window(themename="sandstone")
-    window.title("Planungssystem")
+    window.title("Wellhöfer Hühnerplanung")
     #window.geometry("1500x750")  # Fenstergröße
     window.geometry("1800x750")  # Fenstergröße
     return window
@@ -216,8 +218,11 @@ def eintrag_hinzufuegen(scrollable_frame, id):
     number_label.grid_remove()  # Das Label sofort verstecken
 
     # Button zum Löschen des Eintrags
-    delete_button = ttk.Button(scrollable_frame, text="Löschen", command=lambda: delete_entry(scrollable_frame, id, numb), bootstyle=DANGER)
-    delete_button.grid(row=row_offset, column=8, padx=5, pady=5)
+    delete_button = ttk.Button(scrollable_frame, text="Löschen",command=lambda: delete_entry(scrollable_frame, id, numb), bootstyle=DANGER)
+    delete_button.grid(row=row_offset, column=8, padx=5, pady=5)  # Spalte 8
+
+    check_button = ttk.Button(scrollable_frame, text="Check", command=lambda: check_entry(scrollable_frame, id, numb),bootstyle=SUCCESS)
+    check_button.grid(row=row_offset, column=9, padx=5, pady=5)  # Spalte 9
 
     #id_entry.insert(0, id)
     # Speichern der Entry-Felder für späteres Speichern in der Datenbank
@@ -351,9 +356,7 @@ def create_add_button(root, scrollable_frame):
 
 # Button zum Speichern der Einträge
 def create_save_button(root, textfeld_braun, textfeld_weiss, textfeld3):
-    speichern_button = ttk.Button(root, text="Speichern",
-                                  command=lambda: speichern_daten(textfeld_braun, textfeld_weiss, textfeld3),
-                                  bootstyle=PRIMARY)
+    speichern_button = ttk.Button(root, text="Speichern",command=lambda: speichern_daten(textfeld_braun, textfeld_weiss, textfeld3),bootstyle=PRIMARY)
     speichern_button.pack(pady=10)
 
 def delete_entry(scrollable_frame, entry_id, numb):
@@ -418,6 +421,8 @@ def create_footer(root):
 
     weiss_summe_label = ttk.Label(footer_frame, font=("Arial", 12))
     weiss_summe_label.pack(side="left", padx=10)
+
+
     def berechne_summen():
         conn = sqlite3.connect('datenbank/diedatenbank.db')
         cursor = conn.cursor()
@@ -447,6 +452,7 @@ def create_footer(root):
 
     weiss_ubrig_label = ttk.Label(footer_frame, font=("Arial", 12))
     weiss_ubrig_label.pack(side="left", padx=10)
+
     def berechne_ubrig():
         conn = sqlite3.connect('datenbank/diedatenbank.db')
         cursor = conn.cursor()
@@ -459,8 +465,16 @@ def create_footer(root):
 
         if result:
             braun_ubrig, weiss_ubrig = result
-            braune_summe = int( re.sub(r"[^\d-]", "", braun_summe_label.cget("text")))
-            weisse_summe = int( re.sub(r"[^\d-]", "", weiss_summe_label.cget("text")))
+            try:
+                braune_summe = int(re.sub(r"[^\d-]", "", braun_summe_label.cget("text")))
+            except ValueError:
+                braune_summe = 0  # Setzen Sie einen Standardwert, falls die Umwandlung fehlschlägt
+
+            try:
+                weisse_summe = int(re.sub(r"[^\d-]", "", weiss_summe_label.cget("text")))
+            except ValueError:
+                weisse_summe = 0  # Setzen Sie einen Standardwert, falls die Umwandlung fehlschlägt
+
             braun = braun_ubrig - braune_summe
             weiss = weiss_ubrig - weisse_summe
             braun_ubrig_label.config(text=f"Braun: {braun}")
@@ -632,7 +646,6 @@ def main():
     def abmelden():
         root.destroy()  # Schließe das aktuelle Fenster
         #update_gui()
-        import Main
         Main.starten()
         #os.system(f"python Main.py")
     # Refresh-Button

@@ -5,6 +5,7 @@ import kundenanleg
 import produkte
 import ttkbootstrap as ttk
 from ttkbootstrap.constants import *
+import Main2
 
 # Globale Variablen, um Tabellen zu verfolgen
 customer_list_frame = None
@@ -65,7 +66,7 @@ def start_function():
         print(f"Neuer Nutzer {user_input} hinzugefügt mit Datum {current_date}")
 
     # Wechsle zur Main2-Seite
-    root1.destroy()  # Schließe das aktuelle Fenster
+    root1.withdraw()  # Schließe das aktuelle Fenster
     stall, kw, jahr = "Stall 1", 8, 2024
     kw, jahr = aktuelle_kw_jahr()
     print(kw, jahr)
@@ -81,7 +82,6 @@ def start_function():
         print("Kein Eintrag für den angegebenen Nutzer gefunden.")
     # Schließen der Verbindung
     conn.close()
-    import Main2
     Main2.starten(stall, kw, jahr, user_input)
     stall = stall.replace(" ", "-")
     #os.system(f"python Main2.py {user_input} {stall} {kw} {jahr}")
@@ -286,11 +286,14 @@ def show_product_list():
     # Button zum Erstellen eines neuen Produkts hinzufügen
     create_product_button = ttk.Button(product_list_frame, text="Produktliste bearbeiten", bootstyle="success", command=lambda: produkte.create_gui())
     create_product_button.pack(pady=10)
-    refresh_product_button = ttk.Button(product_list_frame, text="Refresh", bootstyle="success", command=lambda: double_show_product_list())
+
+    refresh_product_button = ttk.Button(product_list_frame, text="Refresh", bootstyle="SUCCESS", command=lambda: double_show_product_list())
     refresh_product_button.pack(pady=10)
 
 input_entry = main_frame = user_tree = root1 = conn = cursor = None
-
+def close_program():
+    print("Programm wird geschlossen...")  # Zusätzliche Aktionen
+    root1.destroy()  # Hauptfenster schließen
 def starten():
     global input_entry, main_frame, user_tree, root1, cursor, conn
     # Verbinde zur SQLite-Datenbank
@@ -305,19 +308,19 @@ def starten():
 
     title_frame = ttk.Frame(root1, bootstyle="light")
     title_frame.pack(fill="both")
-    title_label = ttk.Label(title_frame, text="Geflügelhof Wellhöfer", font=("Helvetica", 28, "bold"))
+    title_label = ttk.Label(title_frame, text="Geflügelhof Wellhöfer", font=("Helvetica", 28, "bold"), background="#f5f5f5")
     title_label.pack(pady=10)
 
-    main_frame = ttk.Frame(root1, bootstyle="light")
+    main_frame = ttk.Frame(root1, bootstyle="light", borderwidth=2, relief="sunken")
     main_frame.pack(padx=20, pady=20)
 
-    left_frame = ttk.Frame(main_frame, bootstyle="light")
+    left_frame = ttk.Frame(main_frame, bootstyle="light", borderwidth=2, relief="sunken")
     left_frame.grid(row=0, column=0, padx=20, pady=10, sticky="n")
 
     user_list_frame = ttk.Frame(left_frame, bootstyle="light")
     user_list_frame.pack(pady=10)
 
-    user_list_label = ttk.Label(user_list_frame, text="Benutzerliste", font=("Helvetica", 14, "bold"))
+    user_list_label = ttk.Label(user_list_frame, text="Benutzerliste", font=("Helvetica", 14, "bold"), background="#f5f5f5")
     user_list_label.pack(pady=15)
 
     user_tree = ttk.Treeview(user_list_frame, columns=("name",), show="headings", height=10, bootstyle="light")
@@ -332,11 +335,16 @@ def starten():
     input_entry = ttk.Entry(left_frame, font=("Helvetica", 14), width=16)
     input_entry.pack(pady=10)
     # Label "Anmelden" hinzufügen
-    login_label = ttk.Label(left_frame, text="Anmelden", font=("Helvetica", 16, "bold"))
+    login_label = ttk.Label(left_frame, text="Anmelden", font=("Helvetica", 16, "bold"), background="#f5f5f5")
     login_label.pack(pady=10)
 
+
+    # Benutzerdefinierten Style erstellen
+    style = ttk.Style()
+    style.configure("Custom.TFrame", background="#f5f5f5")  # Hintergrundfarbe definieren
+
     # Frame für die oberen Buttons (Start und Löschen)
-    upper_button_frame = ttk.Frame(left_frame)
+    upper_button_frame = ttk.Frame(left_frame, style="Custom.TFrame")  # Style anwenden
     upper_button_frame.pack(pady=10)
 
     # Start Button
@@ -353,6 +361,11 @@ def starten():
 
     product_button = ttk.Button(left_frame, text="Produktliste anzeigen", bootstyle="primary", command=show_product_list)
     product_button.pack(pady=10, padx=10, fill="both")
+
+
+
+    close_button = ttk.Button(left_frame, text="Schließen", bootstyle="danger",command=close_program)
+    close_button.pack(pady=10, padx=10, fill="both")
 
     root1.mainloop()
     conn.close()
