@@ -156,6 +156,54 @@ def create_large_text(root):
     large_text2_label = ttk.Label(root, text=txt2, font=("Arial", 20, "bold"))
     large_text2_label.pack(pady=10)
 
+# Funktion zum Erstellen der Pfeil-Buttons und des Eingabefelds (Buttons über den Pfeilen)
+def create_arrow_buttons(root):
+    arrow_frame = ttk.Frame(root)
+    arrow_frame.pack(pady=10)
+
+    # Buttons (Refresh, Abmelden) über den Pfeilen
+    button_frame = ttk.Frame(arrow_frame)
+    button_frame.pack(pady=5)
+
+    refresh_button = ttk.Button(button_frame, text="Refresh", bootstyle=INFO)
+    refresh_button.pack(side="left", padx=5)
+
+    abmelden_button = ttk.Button(button_frame, text="Abmelden", bootstyle=DANGER)
+    abmelden_button.pack(side="left", padx=5)
+
+    # Pfeil-Buttons für KW (zwei Pfeile pro Richtung)
+    kw_frame = ttk.Frame(arrow_frame)
+    kw_frame.pack(pady=5)
+
+    left_arrow_kw1 = ttk.Button(kw_frame, text="<<", bootstyle=SECONDARY)
+    left_arrow_kw1.pack(side="left", padx=2)
+
+    left_arrow_kw2 = ttk.Button(kw_frame, text="<", bootstyle=SECONDARY)
+    left_arrow_kw2.pack(side="left", padx=2)
+
+    kw_label = ttk.Label(kw_frame, text="KW 7", font=("Arial", 12))
+    kw_label.pack(side="left", padx=5)
+
+    right_arrow_kw1 = ttk.Button(kw_frame, text=">", bootstyle=SECONDARY)
+    right_arrow_kw1.pack(side="left", padx=2)
+
+    right_arrow_kw2 = ttk.Button(kw_frame, text=">>", bootstyle=SECONDARY)
+    right_arrow_kw2.pack(side="left", padx=2)
+
+    # Pfeil-Buttons für Stall
+    stall_frame = ttk.Frame(arrow_frame)
+    stall_frame.pack(pady=5)
+
+    left_arrow_stall = ttk.Button(stall_frame, text="<", bootstyle=SECONDARY)
+    left_arrow_stall.pack(side="left", padx=5)
+
+    stall_entry = ttk.Entry(stall_frame, width=10)
+    stall_entry.insert(0, "Stall 2")
+    stall_entry.pack(side="left", padx=5)
+
+    right_arrow_stall = ttk.Button(stall_frame, text=">", bootstyle=SECONDARY)
+    right_arrow_stall.pack(side="left", padx=5)
+
 # Hauptfunktion, die das GUI erstellt und startet
 def main():
     # Fenster erstellen
@@ -193,6 +241,9 @@ def main():
     # Hinzufügen-Button, Speichern-Button und Fußzeile
     create_add_button(root, scrollable_frame)
     create_save_button(root)
+
+    # Pfeil-Buttons und Eingabefeld hinzufügen (Buttons über den Pfeilen)
+    create_arrow_buttons(root)
 
     # Mainloop starten
     root.mainloop()
