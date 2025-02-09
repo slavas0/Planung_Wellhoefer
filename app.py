@@ -35,7 +35,6 @@ def start_function():
     if not user_input:
         user_input = "nutzer"
     print(f"Eingegebener Text: {user_input}")
-
     # Prüfen, ob der Nutzer bereits in der Datenbank existiert
     cursor.execute("SELECT * FROM nutzer WHERE name = ?", (user_input,))
     result = cursor.fetchone()
@@ -66,26 +65,25 @@ def start_function():
     else:
         # Wenn kein Eintrag gefunden wurde, bleiben die Variablen unverändert
         print("Kein Eintrag für den angegebenen Nutzer gefunden.")
+    global username
+    username = user_input
+    lastitemsdef()
     start_frame.pack_forget()
     table_frame.pack(fill="both", expand=True)
-
+    refresh_table_frame()
 def show_customer_list():
     start_frame.pack_forget()
     customer_frame.pack(fill="both", expand=True)
-
 def show_product_list():
     start_frame.pack_forget()
     product_frame.pack(fill="both", expand=True)
-
 def back_to_start():
     table_frame.pack_forget()
     customer_frame.pack_forget()
     product_frame.pack_forget()
     start_frame.pack(fill="both", expand=True)
-
 def close_program():
     root1.destroy()
-
 def load_user_list(tree):
     try:
         # Benutzer aus der Datenbank abrufen
@@ -508,11 +506,15 @@ def create_large_text(root):
     large_text2_label.pack(pady=10)
 
 def select_kw_jahr_stall(neukw, neustall, neujahr):
-    return
-
-def select_kw_jahr_stall_fake(neukw, neustall, neujahr):
-    return
-
+    global nextstall, nexttime
+    nextstall = neustall
+    nexttime = [neukw, neujahr]
+    refresh_table_frame()
+def setglobs():
+    global derstall, dieKW, dasjahr, nextstall, nexttime
+    derstall = nextstall
+    dieKW = nexttime[0]
+    dasjahr = nexttime[1]
 def erster_montag_kw(monat, jahr):
     erster_tag = datetime(jahr, monat, 1)
     erster_montag = erster_tag + timedelta(days=(7 - erster_tag.weekday()) % 7)
@@ -603,110 +605,122 @@ close_button.pack(pady=10)
 
 # Tabelle Seite
 table_frame = ttk.Frame(root1, bootstyle="light")
-
-def update_next_kw(change):
-    kwtemp = nexttime[0] + change
-    nexttime[0] = (kwtemp - 1) % 53 + 1
-    if kwtemp < 1:
-        nexttime[1] -= 1
-    elif kwtemp > 53:
-        nexttime[1] += 1
-    print(nexttime)
-    next_kw_label.config(text=str(nexttime[0]))
-
-def next_stall(change):
-    global nextstall
-    try:
-        current_index = allestalle.index(nextstall)
-        new_index = (current_index + change) % len(allestalle)
-        nextstall = allestalle[new_index]
-    except ValueError:
-        print(f"nextstall {allestalle} nicht in allestalle gefunden.")
-    next_stall_label.config(text=str(nextstall))
-
-create_last_items_tabs(table_frame)
-create_footer(table_frame)
-canvas, scrollable_frame = create_scrollable_area(table_frame)
-enable_mouse_scroll(canvas)
-create_title(table_frame)
-create_welcome_label(table_frame)
-create_large_text(table_frame)
-braun, weiss, lila = eingang_db_abfragen()
-label = ttk.Label(scrollable_frame, text="Braune", font=("Arial", 12, "bold"))
-label.grid(row=0, column=0, padx=10, pady=10)
-textfeld_braun = ttk.Entry(scrollable_frame)
-textfeld_braun.grid(row=1, column=0, padx=5, pady=5)
-
-label = ttk.Label(scrollable_frame, text="Weiße", font=("Arial", 12, "bold"))
-label.grid(row=0, column=1, padx=10, pady=10)
-textfeld_weiss = ttk.Entry(scrollable_frame)
-textfeld_weiss.grid(row=1, column=1, padx=5, pady=5)
-
-label = ttk.Label(scrollable_frame, text="Anmerkung", font=("Arial", 12, "bold"))
-label.grid(row=0, column=2, padx=10, pady=10)
-textfeld3 = ttk.Entry(scrollable_frame, width=40)
-textfeld3.grid(row=1, column=2, columnspan=2, padx=5, pady=5, sticky="ew")
-
-textfeld_braun.insert(0, braun)
-textfeld_weiss.insert(0, weiss)
-textfeld3.insert(0, lila)
-create_headers(scrollable_frame)
-create_add_button(table_frame, scrollable_frame)
-create_save_button(table_frame, textfeld_braun, textfeld_weiss, textfeld3)
-
-wechsel_button = ttk.Button(table_frame, text="Refresh", command=lambda: select_kw_jahr_stall(nexttime[0], nextstall, nexttime[1]))
-wechsel_button.pack(pady=10)
-
-abmelden_button = ttk.Button(table_frame, text="Abmelden", command=lambda: back_to_start(), bootstyle=DANGER)
-abmelden_button.pack(pady=10)
-
-arrow_frame_1 = ttk.Frame(table_frame)
-arrow_frame_1.pack(pady=5)
-
-left_arrow_1 = ttk.Button(arrow_frame_1, text="<<", command=lambda: update_next_kw(-10), width=5)
-left_arrow_1.pack(side="left", padx=5)
-
-left_arrow_12 = ttk.Button(arrow_frame_1, text="<", command=lambda: update_next_kw(-1), width=5)
-left_arrow_12.pack(side="left", padx=5)
-
-next_kw_label = ttk.Label(arrow_frame_1, text=str(nexttime[0]))
-next_kw_label.pack(side="left", padx=5)
-
-right_arrow_1 = ttk.Button(arrow_frame_1, text=">", command=lambda: update_next_kw(1), width=5)
-right_arrow_1.pack(side="left", padx=5)
-right_arrow_12 = ttk.Button(arrow_frame_1, text=">>", command=lambda: update_next_kw(10), width=5)
-right_arrow_12.pack(side="left", padx=5)
-
-arrow_frame_2 = ttk.Frame(table_frame)
-arrow_frame_2.pack(pady=5)
-
-left_arrow_2 = ttk.Button(arrow_frame_2, text="<", command=lambda: next_stall(-1), width=5)
-left_arrow_2.pack(side="left", padx=5)
-
-next_stall_label = ttk.Label(arrow_frame_2, text=str(nextstall))
-next_stall_label.pack(side="left", padx=5)
-
-right_arrow_2 = ttk.Button(arrow_frame_2, text=">", command=lambda: next_stall(1), width=5)
-right_arrow_2.pack(side="left", padx=5)
-
-arrow_frame_2 = ttk.Frame(table_frame)
-arrow_frame_2.pack(pady=5)
-
-next_stall_var = str(nextstall) #ttk.StringVar(value=str(nextstall))
-next_stall_entry = ttk.Entry(arrow_frame_2, textvariable=next_stall_var, justify="center", width=10)
-next_stall_entry.pack(side="left", padx=5)
-
-def update_stall(event=None):
-    global nextstall
-    try:
-        new_stall = str(next_stall_var.get())
-        nextstall = new_stall
+def build_ui2():
+    def update_next_kw(change):
+        kwtemp = nexttime[0] + change
+        nexttime[0] = (kwtemp - 1) % 53 + 1
+        if kwtemp < 1:
+            nexttime[1] -= 1
+        elif kwtemp > 53:
+            nexttime[1] += 1
+        print(nexttime)
+        next_kw_label.config(text=str(nexttime[0]))
+    def next_stall(change):
+        global nextstall
+        try:
+            current_index = allestalle.index(nextstall)
+            new_index = (current_index + change) % len(allestalle)
+            nextstall = allestalle[new_index]
+        except ValueError:
+            print(f"nextstall {allestalle} nicht in allestalle gefunden.")
         next_stall_label.config(text=str(nextstall))
-    except ValueError:
-        next_stall_var.set(str(nextstall))
 
-next_stall_entry.bind("<Return>", update_stall)
-daten_abfragen_und_fuellen(scrollable_frame, dieKW, dasjahr, derstall)
+    create_last_items_tabs(table_frame)
+    create_footer(table_frame)
+    canvas, scrollable_frame = create_scrollable_area(table_frame)
+    enable_mouse_scroll(canvas)
+    create_title(table_frame)
+    create_welcome_label(table_frame)
+    create_large_text(table_frame)
+    braun, weiss, lila = eingang_db_abfragen()
+    label = ttk.Label(scrollable_frame, text="Braune", font=("Arial", 12, "bold"))
+    label.grid(row=0, column=0, padx=10, pady=10)
+    textfeld_braun = ttk.Entry(scrollable_frame)
+    textfeld_braun.grid(row=1, column=0, padx=5, pady=5)
+
+    label = ttk.Label(scrollable_frame, text="Weiße", font=("Arial", 12, "bold"))
+    label.grid(row=0, column=1, padx=10, pady=10)
+    textfeld_weiss = ttk.Entry(scrollable_frame)
+    textfeld_weiss.grid(row=1, column=1, padx=5, pady=5)
+
+    label = ttk.Label(scrollable_frame, text="Anmerkung", font=("Arial", 12, "bold"))
+    label.grid(row=0, column=2, padx=10, pady=10)
+    textfeld3 = ttk.Entry(scrollable_frame, width=40)
+    textfeld3.grid(row=1, column=2, columnspan=2, padx=5, pady=5, sticky="ew")
+
+    textfeld_braun.insert(0, braun)
+    textfeld_weiss.insert(0, weiss)
+    textfeld3.insert(0, lila)
+    create_headers(scrollable_frame)
+    create_add_button(table_frame, scrollable_frame)
+    create_save_button(table_frame, textfeld_braun, textfeld_weiss, textfeld3)
+
+    wechsel_button = ttk.Button(table_frame, text="Neu laden", command=lambda: refresh_table_frame())
+    wechsel_button.pack(pady=10)
+
+    abmelden_button = ttk.Button(table_frame, text="Abmelden", command=lambda: back_to_start(), bootstyle=DANGER)
+    abmelden_button.pack(pady=10)
+
+    arrow_frame_1 = ttk.Frame(table_frame)
+    arrow_frame_1.pack(pady=5)
+
+    left_arrow_1 = ttk.Button(arrow_frame_1, text="<<", command=lambda: update_next_kw(-10), width=5)
+    left_arrow_1.pack(side="left", padx=5)
+
+    left_arrow_12 = ttk.Button(arrow_frame_1, text="<", command=lambda: update_next_kw(-1), width=5)
+    left_arrow_12.pack(side="left", padx=5)
+
+    next_kw_label = ttk.Label(arrow_frame_1, text=str(nexttime[0]))
+    next_kw_label.pack(side="left", padx=5)
+
+    right_arrow_1 = ttk.Button(arrow_frame_1, text=">", command=lambda: update_next_kw(1), width=5)
+    right_arrow_1.pack(side="left", padx=5)
+    right_arrow_12 = ttk.Button(arrow_frame_1, text=">>", command=lambda: update_next_kw(10), width=5)
+    right_arrow_12.pack(side="left", padx=5)
+
+    arrow_frame_2 = ttk.Frame(table_frame)
+    arrow_frame_2.pack(pady=5)
+
+    left_arrow_2 = ttk.Button(arrow_frame_2, text="<", command=lambda: next_stall(-1), width=5)
+    left_arrow_2.pack(side="left", padx=5)
+
+    next_stall_label = ttk.Label(arrow_frame_2, text=str(nextstall))
+    next_stall_label.pack(side="left", padx=5)
+
+    right_arrow_2 = ttk.Button(arrow_frame_2, text=">", command=lambda: next_stall(1), width=5)
+    right_arrow_2.pack(side="left", padx=5)
+
+    arrow_frame_2 = ttk.Frame(table_frame)
+    arrow_frame_2.pack(pady=5)
+
+    next_stall_var = str(nextstall) #ttk.StringVar(value=str(nextstall))
+    next_stall_entry = ttk.Entry(arrow_frame_2, textvariable=next_stall_var, justify="center", width=10)
+    next_stall_entry.pack(side="left", padx=5)
+
+    def update_stall(event=None):
+        global nextstall, next_stall_var
+        try:
+            new_stall = next_stall_var
+            nextstall = new_stall
+            next_stall_label.config(text=str(nextstall))
+        except ValueError:
+            next_stall_var = str(nextstall)
+
+    next_stall_entry.bind("<Return>", update_stall)
+    daten_abfragen_und_fuellen(scrollable_frame, dieKW, dasjahr, derstall)
+
+
+def refresh_table_frame():
+    global table_frame
+    setglobs()
+    table_frame.destroy()  # Entfernt den alten Frame
+    table_frame = ttk.Frame(root1, bootstyle="light")  # Erstellt einen neuen Frame
+    table_frame.pack(fill="both", expand=True)  # Neu positionieren
+    build_ui2()  # Setzt das UI neu auf
+
+build_ui2()
+
+
 
 # Kundenliste Seite
 customer_frame = ttk.Frame(root1, bootstyle="light")
