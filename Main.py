@@ -5,7 +5,7 @@ import kundenanleg
 import produkte
 import ttkbootstrap as ttk
 from ttkbootstrap.constants import *
-import Main2
+import Frontend
 
 # Globale Variablen, um Tabellen zu verfolgen
 customer_list_frame = None
@@ -82,7 +82,8 @@ def start_function():
         print("Kein Eintrag für den angegebenen Nutzer gefunden.")
     # Schließen der Verbindung
     conn.close()
-    Main2.starten(stall, kw, jahr, user_input)
+#    Main2.starten(stall, kw, jahr, user_input)
+    Frontend.main()
     stall = stall.replace(" ", "-")
     #os.system(f"python Main2.py {user_input} {stall} {kw} {jahr}")
 

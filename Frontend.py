@@ -1,6 +1,8 @@
 import ttkbootstrap as ttk
 from ttkbootstrap.constants import *
 from tkinter import Canvas
+import os
+import sys
 
 # Hauptfenster erstellen mit einem modernen Theme
 def create_main_window():
@@ -168,7 +170,7 @@ def create_arrow_buttons(root):
     refresh_button = ttk.Button(button_frame, text="Refresh", bootstyle=INFO)
     refresh_button.pack(side="left", padx=5)
 
-    abmelden_button = ttk.Button(button_frame, text="Abmelden", bootstyle=DANGER)
+    abmelden_button = ttk.Button(button_frame, text="Abmelden", bootstyle=DANGER, command=lambda: abmelden(root))
     abmelden_button.pack(side="left", padx=5)
 
     # Pfeil-Buttons für KW (zwei Pfeile pro Richtung)
@@ -203,6 +205,11 @@ def create_arrow_buttons(root):
 
     right_arrow_stall = ttk.Button(stall_frame, text=">", bootstyle=SECONDARY)
     right_arrow_stall.pack(side="left", padx=5)
+
+# Funktion zum Abmelden
+def abmelden(root):
+    root.destroy()  # Schließt das aktuelle Fenster
+    os.execv(sys.executable, ['python'] + [sys.argv[0]])  # Startet Main.py neu
 
 # Hauptfunktion, die das GUI erstellt und startet
 def main():

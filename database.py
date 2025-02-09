@@ -2,6 +2,7 @@
 import pandas as pd
 import sqlite3
 conn = sqlite3.connect('../../PycharmProjects/Planung_Wellhoefer/datenbank/diedatenbank.db')
+cursor = conn.cursor()
 
 
 def tabelle_ausgeben(tab):
@@ -75,8 +76,8 @@ def create_inventar_table():
 
     # SQL-Anweisung zum Erstellen der Tabelle
     sql = "DELETE FROM letztereintrag WHERE stall = Stall-2"
-
     cursor.execute(sql)
+
     conn.commit()
 
 # Rufe die Funktion auf, um die Tabelle zu erstellen
@@ -84,8 +85,8 @@ def create_inventar_table():
 
 
 
+conn.commit()
 
-cursor = conn.cursor()
 #sql = "CREATE TABLE produkte (    Artikelnummer TEXT PRIMARY KEY,    Name TEXT NOT NULL,    Preis REAL NOT NULL,    Bemerkung TEXT);"
 #sql = "DROP TABLE produkte"
 #sql = "DELETE FROM letztereintrag WHERE id NOT IN (SELECT MAX(id) FROM letztereintrag GROUP BY nutzer, stall, kw, jahr);"
