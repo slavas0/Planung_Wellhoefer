@@ -709,7 +709,6 @@ def build_ui2():
     next_stall_entry.bind("<Return>", update_stall)
     daten_abfragen_und_fuellen(scrollable_frame, dieKW, dasjahr, derstall)
     print(entries)
-
 def refresh_table_frame():
     global table_frame
     setglobs()
