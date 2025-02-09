@@ -718,8 +718,6 @@ def refresh_table_frame():
     table_frame.pack(fill="both", expand=True)  # Neu positionieren
     build_ui2()  # Setzt das UI neu auf
 
-build_ui2()
-
 
 
 # Kundenliste Seite
