@@ -278,13 +278,13 @@ def enable_mouse_scroll(canvas):
     canvas.bind_all("<Button-5>", lambda event: canvas.yview_scroll(1, "units"))
 
 def create_title(root):
-    title_label = ttk.Label(root, text="Planungssystem", font=("Arial", 28, "bold"))
+    title_label = ttk.Label(root, text="Planungssystem", font=("Arial", 28, "bold"), background="#f5f5f5")
     title_label.pack(pady=10)
 
 def create_headers(scrollable_frame):
     headers = ["Name", "Telefonnummer", "Stück Braun", "Stück Weiß", "Verhalten", "Preis", "Bemerkung"]
     for i, header in enumerate(headers):
-        label = ttk.Label(scrollable_frame, text=header, font=("Arial", 12, "bold"))
+        label = ttk.Label(scrollable_frame, text=header, font=("Arial", 12, "bold"), background="#f5f5f5")
         label.grid(row=2, column=i, padx=10, pady=10)
 
 def check_entry(frame, id, numb, row):
@@ -561,7 +561,7 @@ start_frame.pack(fill="both", expand=True)
 title_label = ttk.Label(start_frame, text="Geflügelhof Wellhöfer", font=("Helvetica", 28, "bold"), background="#f5f5f5")
 title_label.pack(pady=10)
 
-user_list_frame = ttk.Frame(start_frame, bootstyle="light")
+user_list_frame = ttk.Frame(start_frame, bootstyle="light", borderwidth=2, relief="sunken")
 user_list_frame.pack(pady=10)
 
 user_list_label = ttk.Label(user_list_frame, text="Benutzerliste", font=("Helvetica", 14, "bold"), background="#f5f5f5")
@@ -572,9 +572,9 @@ user_tree.heading("name", text="Zum auswählen antippen")
 user_tree.column("name", width=190, anchor="center")
 user_tree.pack(fill="both", expand=True)
 
-user_scrollbar = ttk.Scrollbar(user_list_frame, orient="vertical", command=user_tree.yview)
-user_tree.configure(yscrollcommand=user_scrollbar.set)
-user_scrollbar.pack(side="right", fill="y")
+#user_scrollbar = ttk.Scrollbar(user_list_frame, orient="vertical", command=user_tree.yview)
+#user_tree.configure(yscrollcommand=user_scrollbar.set)
+#user_scrollbar.pack(side="right", fill="y")
 
 user_tree.bind("<<TreeviewSelect>>", on_user_select)
 load_user_list(user_tree)
@@ -708,7 +708,7 @@ def build_ui2():
 
     next_stall_entry.bind("<Return>", update_stall)
     daten_abfragen_und_fuellen(scrollable_frame, dieKW, dasjahr, derstall)
-
+    print(entries)
 
 def refresh_table_frame():
     global table_frame
