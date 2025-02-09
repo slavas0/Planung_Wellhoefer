@@ -4,6 +4,7 @@ from ttkbootstrap import ttk, Window, SUCCESS, INFO, DANGER, SECONDARY
 from screeninfo import get_monitors
 from datetime import datetime, timedelta
 import re
+from tkinter import PhotoImage
 
 # Globale Variablen
 username = "nutzer"
@@ -287,11 +288,32 @@ def create_headers(scrollable_frame):
         label = ttk.Label(scrollable_frame, text=header, font=("Arial", 12, "bold"), background="#f5f5f5")
         label.grid(row=2, column=i, padx=10, pady=10)
 
+
 def check_entry(frame, id, numb, row):
-    hintergrund_label = ttk.Label(frame, background="#d0f0c0")
-    hintergrund_label.grid(row=row, column=0, sticky="nsew", pady=5)
-    # Spaltengewicht anpassen, damit das Hintergrund-Label die gesamte Breite einnimmt
-    frame.grid_columnconfigure(0, weight=1)
+    # Überprüfen, ob bereits ein Hintergrund-Label existiert
+    if hasattr(frame, f"hintergrund_label_{row}"):
+        # Wenn das Label existiert, entfernen wir es
+        hintergrund_label = getattr(frame, f"hintergrund_label_{row}")
+        hintergrund_label.destroy()
+        delattr(frame, f"hintergrund_label_{row}")
+
+        # Setze die Hintergrundfarbe der Widgets zurück
+        for widget in frame.grid_slaves(row=row):
+            if isinstance(widget, (ttk.Entry, ttk.Label, ttk.Button)):
+                widget.configure(background="")  # Setze den Standardhintergrund zurück
+    else:
+        # Wenn kein Label existiert, erstellen wir ein neues
+        hintergrund_label = ttk.Label(frame, background="#d0f0c0")
+        hintergrund_label.grid(row=row, column=0, columnspan=10, sticky="nsew", pady=5)
+        hintergrund_label.lower()  # Hinter die anderen Widgets verschieben
+        # Speichern des Labels als Attribut des Frames
+        setattr(frame, f"hintergrund_label_{row}", hintergrund_label)
+
+        # Setze die Hintergrundfarbe der Widgets auf grün
+        for widget in frame.grid_slaves(row=row):
+            if isinstance(widget, (ttk.Entry, ttk.Label, ttk.Button)):
+                widget.configure(background="#d0f0c0")  # Grüner Hintergrund
+
 
 def eintrag_hinzufuegen(scrollable_frame, id):
     global entry_count
@@ -299,6 +321,7 @@ def eintrag_hinzufuegen(scrollable_frame, id):
     numb = len(id_regist)
     id_regist.append(0)
     entry_count += 1
+
     name_entry = ttk.Entry(scrollable_frame)
     name_entry.grid(row=row_offset, column=0, padx=5, pady=5)
     telefon_entry = ttk.Entry(scrollable_frame)
@@ -319,10 +342,14 @@ def eintrag_hinzufuegen(scrollable_frame, id):
     number_label = ttk.Label(scrollable_frame, text=numb)
     number_label.grid(row=row_offset, column=7, padx=5, pady=5)
     number_label.grid_remove()
-    delete_button = ttk.Button(scrollable_frame, text="Löschen", command=lambda: delete_entry(scrollable_frame, id, numb), bootstyle=DANGER)
+    delete_button = ttk.Button(scrollable_frame, text="Löschen", command=lambda: delete_entry(scrollable_frame, id, numb), bootstyle="DANGER")
     delete_button.grid(row=row_offset, column=8, padx=5, pady=5)
-    check_button = ttk.Button(scrollable_frame, text="Check", command=lambda: check_entry(scrollable_frame, id, numb, row_offset), bootstyle=SUCCESS)
+    # Häkchen-Icon laden
+    check_icon = PhotoImage(file="checkmark.png")  # Pfad zum Häkchen-Icon
+    check_button = ttk.Button(scrollable_frame, image=check_icon, command=lambda: check_entry(scrollable_frame, id, numb, row_offset), bootstyle="SUCCESS")
+    check_button.image = check_icon  # Referenz halten, um Garbage Collection zu verhindern
     check_button.grid(row=row_offset, column=9, padx=5, pady=5)
+
     entries.append({
         "id": id_label,
         "number": number_label,
@@ -546,7 +573,7 @@ def eingang_db_abfragen():
         return 0, 0, 0
 
 
-#!!!!!!!!!!!!!!!Hier fängt Frontend an!!!!!!!!!!!!!!
+#! Hier fängt Frontend an!
 # Hauptfenster erstellen
 root1 = Window(themename="sandstone")
 root1.title("Geflügelhof Wellhöfer")
