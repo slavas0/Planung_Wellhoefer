@@ -84,6 +84,9 @@ def create_inventar_table():
 #create_inventar_table()
 
 
+
+#cursor.execute('DROP TABLE IF EXISTS letztereintrag;')
+
 conn.commit()
 
 #sql = "CREATE TABLE produkte (    Artikelnummer TEXT PRIMARY KEY,    Name TEXT NOT NULL,    Preis REAL NOT NULL,    Bemerkung TEXT);"

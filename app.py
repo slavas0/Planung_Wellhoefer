@@ -1,5 +1,5 @@
 import sqlite3
-from tkinter import Text, Canvas, messagebox, PhotoImage
+from tkinter import Text, Canvas, messagebox, PhotoImage, Button
 from ttkbootstrap import ttk, Window, SUCCESS, INFO, DANGER, SECONDARY
 from screeninfo import get_monitors
 from datetime import datetime, timedelta
@@ -18,6 +18,7 @@ nexttime = [dieKW, dasjahr]
 entry_count = 0
 entries = []
 eingang = []
+state = False
 
 # Verbinde zur SQLite-Datenbank
 conn = sqlite3.connect('datenbank/diedatenbank.db')
@@ -32,9 +33,21 @@ def aktuelle_kw_jahr():
 # Funktionen für die Buttons
 def start_function():
     user_input = input_entry.get().lower().strip()
+
+    # Falls keine Eingabe erfolgt ist, auf einen Standardwert setzen
     if not user_input:
         user_input = "nutzer"
+
     print(f"Eingegebener Text: {user_input}")
+
+    # Wenn ein Element im Treeview ausgewählt wurde, wird der Text hinzugefügt
+    selected_item = user_tree.selection()
+    if selected_item:
+        # Falls ein Element ausgewählt ist, fügen wir den `user_input` in den Tree ein
+        user_tree.insert(selected_item, 'end', text=user_input)
+    else:
+        # Falls kein Element ausgewählt wurde, fügen wir den Text als neues Element im Treeview hinzu
+        user_tree.insert('', 'end', text=user_input)
     # Prüfen, ob der Nutzer bereits in der Datenbank existiert
     cursor.execute("SELECT * FROM nutzer WHERE name = ?", (user_input,))
     result = cursor.fetchone()
@@ -53,20 +66,11 @@ def start_function():
         conn.commit()
         print(f"Neuer Nutzer {user_input} hinzugefügt mit Datum {current_date}")
     stall, kw, jahr = "Stall 1", 8, 2024
-    kw, jahr = aktuelle_kw_jahr()
-    sql = "SELECT stall, kw, jahr FROM letztereintrag WHERE nutzer = ? ORDER BY id DESC LIMIT 1"
-    cursor.execute(sql, (user_input,))
-    result = cursor.fetchone()
-    if result:
-        # Wenn ein Eintrag gefunden wurde, ersetze die Variablen
-        stall, kw, jahr = result
-        print(f"Eintrag gefunden: Stall: {stall}, KW: {kw}, Jahr: {jahr}")
-    else:
-        # Wenn kein Eintrag gefunden wurde, bleiben die Variablen unverändert
-        print("Kein Eintrag für den angegebenen Nutzer gefunden.")
+    global nexttime, dieKW, dasjahr
+    dieKW, dasjahr = aktuelle_kw_jahr()
+    nexttime = [dieKW, dasjahr]
     global username
     username = user_input
-    lastitemsdef()
     start_frame.pack_forget()
     table_frame.pack(fill="both", expand=True)
     refresh_table_frame()
@@ -106,9 +110,9 @@ def on_user_select(event):
     input_entry.insert(0, user)
 
 def delete_nutzer():
-    #selected_item = user_tree.selection()
-    #if selected_item:
-    #    user_tree.delete(selected_item)
+    selected_item = user_tree.selection()
+    if selected_item:
+        user_tree.delete(selected_item)
     user_input = input_entry.get().lower().strip()
     try:
         cursor.execute("DELETE FROM nutzer WHERE name = ?", (user_input,))
@@ -129,19 +133,13 @@ def lade_produkte():
 
 # Funktion zum Hinzufügen oder Bearbeiten eines Produkts
 def produkt_speichern(tree):
-    artikelnummer = artikelnummer_entry.get()
+    artikelnummer = artikelnummer_entry.get().strip()
     name = name_entry.get()
     preis = preis_entry.get()
     bemerkung = bemerkung_text.get("1.0", "end-1c")
 
     if not artikelnummer or not name or not preis:
         messagebox.showerror("Fehler", "Artikelnummer, Name und Preis sind Pflichtfelder.")
-        return
-
-    try:
-        preis = float(preis)
-    except ValueError:
-        messagebox.showerror("Fehler", "Preis muss eine gültige Zahl sein.")
         return
     # Prüfen, ob das Produkt bereits existiert
     cursor.execute("SELECT * FROM produkte WHERE Artikelnummer = ?", (artikelnummer,))
@@ -337,26 +335,20 @@ def clear_form():
     bemerkung_text.delete("1.0", "end")
 def lastitemsdef():
     global lastitems
-    sql_insert = "INSERT INTO letztereintrag (nutzer, stall, kw, jahr) VALUES (?, ?, ?, ?)"
-    cursor.execute(sql_insert, (username, derstall, dieKW, dasjahr))
-    sql = "DELETE FROM letztereintrag WHERE id NOT IN (SELECT MAX(id) FROM letztereintrag GROUP BY nutzer, stall, kw, jahr);"
+    sql = "SELECT DISTINCT stall, kw, jahr FROM eintrag WHERE archived = 0 ORDER BY jahr, kw;"
     cursor.execute(sql)
-    conn.commit()
-    sql = "SELECT stall, kw, jahr FROM letztereintrag WHERE nutzer = ? ORDER BY id"
-    cursor.execute(sql, (username,))
+    lastitems = []
     for row in cursor.fetchall():
         monat = kalenderwoche_monat(row[2], row[1])
-        neuer_eintrag = [str(row[0]), monat, row[2]]
-        if neuer_eintrag not in lastitems and len(lastitems) < 10:
+        neuer_eintrag = [str(row[0]), monat, row[2], row[1]]
+        if  len(lastitems) < 12:
             lastitems.append(neuer_eintrag)
-    lastitems.sort(key=lambda x: (x[1], x[2]))
-    cursor.execute("SELECT DISTINCT stall FROM letztereintrag;")
+    lastitems.sort(key=lambda x: (x[2], x[3], x[0]))  # x[2] = Jahr, x[3] = KW, x[0] = Stall
+
+    cursor.execute("SELECT DISTINCT stall FROM eintrag;")
     global allestalle
     for i in cursor.fetchall():
         allestalle.append(i[0])
-def tabitemsdef():
-
-    return
 def kalenderwoche_daten(jahr, kw):
     vierten_januar = datetime(jahr, 1, 4)
     start_der_ersten_kw = vierten_januar - timedelta(days=vierten_januar.weekday())
@@ -366,13 +358,11 @@ def kalenderwoche_daten(jahr, kw):
     formatierter_start = start_der_kw.strftime("%d. %B %Y")
     formatierter_ende = ende_der_kw.strftime("%d. %B %Y")
     return formatierter_start, formatierter_ende
-
 def kalenderwoche_monat(jahr, kw):
     vierten_januar = datetime(jahr, 1, 4)
     start_der_ersten_kw = vierten_januar - timedelta(days=vierten_januar.weekday())
     start_der_kw = start_der_ersten_kw + timedelta(weeks=kw - 1)
     return start_der_kw.month
-
 def create_scrollable_area(root):
     canvas = Canvas(root)
     scrollable_frame = ttk.Frame(canvas)
@@ -596,17 +586,6 @@ def speichern_daten(textfeld_braun, textfeld_weiss, textfeld3):
         messagebox.showinfo("Speichern", "Die Daten wurden erfolgreich gespeichert!")
     except sqlite3.Error as e:
         messagebox.showerror("Datenbankfehler", str(e))
-
-def create_add_button(root, scrollable_frame):
-    button_frame = ttk.Frame(root)
-    button_frame.pack(pady=10)
-    hinzufuegen_button = ttk.Button(button_frame, text="Eintrag hinzufügen", command=lambda: eintrag_hinzufuegen(scrollable_frame, "none"), bootstyle=SUCCESS)
-    hinzufuegen_button.pack(side="left", padx=10)
-
-def create_save_button(root, textfeld_braun, textfeld_weiss, textfeld3):
-    speichern_button = ttk.Button(root, text="Speichern", command=lambda: speichern_daten(textfeld_braun, textfeld_weiss, textfeld3), bootstyle="primary")
-    speichern_button.pack(pady=10)
-
 def delete_entry(scrollable_frame, entry_id, numb, row):
     if entry_id == 'none':
         entry_id = id_regist[numb]
@@ -697,7 +676,6 @@ def create_footer(root):
             weiss_ubrig_label.config(text="Weiß: 0", background="#ffcccb")
 
     berechne_ubrig()
-
 def create_welcome_label(root):
     welcome_label = ttk.Label(root, text=f"Willkommen, {username}!", font=("Arial", 16))
     welcome_label.pack(pady=10)
@@ -721,25 +699,14 @@ def setglobs():
     derstall = nextstall
     dieKW = nexttime[0]
     dasjahr = nexttime[1]
-def erster_montag_kw(monat, jahr):
-    erster_tag = datetime(jahr, monat, 1)
-    erster_montag = erster_tag + timedelta(days=(7 - erster_tag.weekday()) % 7)
-    kalenderwoche = erster_montag.isocalendar()[1]
-    erster_montag2 = erster_montag.strftime("%d. %B %Y")
-    return kalenderwoche
-
-def month_to_kw(month, jahr, stall):
-    kw = erster_montag_kw(month, jahr)
-    select_kw_jahr_stall(kw, stall, jahr)
-
 def create_last_items_tabs(root):
     last_items_frame = ttk.Frame(root)
     last_items_frame.pack(side="bottom", fill="x", pady=10)
     monate = ["Januar", "Februar", "März", "April", "Mai", "Juni", "Juli", "August", "September", "Oktober", "November", "Dezember"]
     lastitemsdef()
     for idx, item in enumerate(lastitems):
-        tab_text = f"{item[0]} - {monate[item[1]-1]} {item[2]}"
-        last_item_tab = ttk.Button(last_items_frame, text=tab_text, bootstyle=SECONDARY, command=lambda i=item: month_to_kw(i[1], i[2], i[0]))
+        tab_text = f"{item[0]} - KW {item[3]}  {monate[item[1]-1]} {item[2]}"
+        last_item_tab = ttk.Button(last_items_frame, text=tab_text, bootstyle=SECONDARY, command=lambda i=item: select_kw_jahr_stall(i[3], i[0], i[2]))
         last_item_tab.pack(side="left", padx=5, pady=5)
 def eingang_db_abfragen():
     sql = "SELECT braun, weiss, anmerkung FROM inventar WHERE kw = ? AND stall = ? AND jahr = ?"
@@ -750,6 +717,35 @@ def eingang_db_abfragen():
         return braun, weiss, lila
     else:
         return 0, 0, 0
+def refresh_table_frame():
+    global table_frame, entries, entry_count
+    setglobs()
+    table_frame.destroy()  # Entfernt den alten Frame
+    table_frame = ttk.Frame(root1, bootstyle="light")  # Erstellt einen neuen Frame
+    table_frame.pack(fill="both", expand=True)  # Neu positionieren
+    entries = []
+    entry_count = 0
+    build_ui2()  # Setzt das UI neu auf
+def set_archived(value):
+    global nextstall, nexttime
+    sql = "UPDATE eintrag SET archived = ?  WHERE stall = ? AND kw = ? AND jahr = ?;"
+    cursor.execute(sql, (value, nextstall, nexttime[0], nexttime[1]))
+    conn.commit()
+def defstate():
+    global nextstall, nexttime, state
+
+    # Überprüfen, ob es einen Eintrag gibt, der nicht archiviert ist (archived = 0)
+    sql_check = "SELECT COUNT(*) FROM eintrag WHERE stall = ? AND kw = ? AND jahr = ? AND archived = 0;"
+    cursor.execute(sql_check, (nextstall, nexttime[0], nexttime[1]))
+    result = cursor.fetchone()
+    print("count")
+    print(result)
+    # Wenn es mindestens einen nicht archivierten Eintrag gibt, setze state auf False, andernfalls auf True
+    if result[0] > 0:
+        state = False
+    else:
+        state = True
+    return state
 
 
 #! Hier fängt Frontend an!
@@ -828,7 +824,8 @@ def build_ui2():
             nextstall = allestalle[new_index]
         except ValueError:
             print(f"nextstall {allestalle} nicht in allestalle gefunden.")
-        next_stall_label.config(text=str(nextstall))
+        next_stall_entry.delete(0, "end")
+        next_stall_entry.insert(0, str(nextstall))  # Neuen Wert setzen
 
     create_last_items_tabs(table_frame)
     create_footer(table_frame)
@@ -857,16 +854,42 @@ def build_ui2():
     textfeld_weiss.insert(0, weiss)
     textfeld3.insert(0, lila)
     create_headers(scrollable_frame)
-    create_add_button(table_frame, scrollable_frame)
-    create_save_button(table_frame, textfeld_braun, textfeld_weiss, textfeld3)
 
-    wechsel_button = ttk.Button(table_frame, text="Neu laden", command=lambda: refresh_table_frame())
-    wechsel_button.pack(pady=10)
+    button_frame = ttk.Frame(table_frame, bootstyle="light")
+    button_frame.pack(pady=10)
+    hinzufuegen_button = ttk.Button(button_frame, text="Eintrag hinzufügen",
+                                    command=lambda: eintrag_hinzufuegen(scrollable_frame, "none"),
+                                    bootstyle=SUCCESS)
+    hinzufuegen_button.pack(side="left", pady=20, padx=10)
+    def toggle():
+        global state
+        state = not state
+        btn.config(text="  ✔ archiviert  " if state else "  X archivieren  ")
+        if state:
+            set_archived(1)
+        else:
+            set_archived(0)
+    global state
+    state = defstate()
+    if state:
+        btn = Button(button_frame, text="  ✔ archiviert  ", command=toggle, height=2)
+    else:
+        btn = Button(button_frame, text="  X archivieren  ", command=toggle, height=2)
+    btn.pack(side="right", pady=20, padx=10)
+    def reload():
+        global nextstall
+        nextstall = next_stall_entry.get()
+        refresh_table_frame()
 
-    abmelden_button = ttk.Button(table_frame, text="Abmelden", command=lambda: back_to_start(), bootstyle=DANGER)
-    abmelden_button.pack(pady=10)
-
-    arrow_frame_1 = ttk.Frame(table_frame)
+    save_frame = ttk.Frame(table_frame, bootstyle="light")
+    save_frame.pack(pady=5)
+    speichern_button = ttk.Button(save_frame, text="Speichern",
+                                  command=lambda: speichern_daten(textfeld_braun, textfeld_weiss, textfeld3),
+                                  bootstyle="primary")
+    speichern_button.pack(side="right", pady=10, padx=5)
+    wechsel_button = ttk.Button(save_frame, text="Neu laden", command=lambda: reload())
+    wechsel_button.pack(side="left", pady=10, padx=5)
+    arrow_frame_1 = ttk.Frame(table_frame, bootstyle="light")
     arrow_frame_1.pack(pady=5)
 
     left_arrow_1 = ttk.Button(arrow_frame_1, text="<<", command=lambda: update_next_kw(-10), width=5)
@@ -883,47 +906,26 @@ def build_ui2():
     right_arrow_12 = ttk.Button(arrow_frame_1, text=">>", command=lambda: update_next_kw(10), width=5)
     right_arrow_12.pack(side="left", padx=5)
 
-    arrow_frame_2 = ttk.Frame(table_frame)
+    arrow_frame_2 = ttk.Frame(table_frame, bootstyle="light")
     arrow_frame_2.pack(pady=5)
 
     left_arrow_2 = ttk.Button(arrow_frame_2, text="<", command=lambda: next_stall(-1), width=5)
     left_arrow_2.pack(side="left", padx=5)
 
-    next_stall_label = ttk.Label(arrow_frame_2, text=str(nextstall))
-    next_stall_label.pack(side="left", padx=5)
+    next_stall_entry = ttk.Entry(arrow_frame_2)
+    next_stall_entry.insert(0, str(nextstall))  # Standardwert setzen
+    next_stall_entry.pack(side="left", padx=5)
 
     right_arrow_2 = ttk.Button(arrow_frame_2, text=">", command=lambda: next_stall(1), width=5)
     right_arrow_2.pack(side="left", padx=5)
 
-    arrow_frame_2 = ttk.Frame(table_frame)
+    arrow_frame_2 = ttk.Frame(table_frame, bootstyle="light")
     arrow_frame_2.pack(pady=5)
 
-    next_stall_var = str(nextstall) #ttk.StringVar(value=str(nextstall))
-    next_stall_entry = ttk.Entry(arrow_frame_2, textvariable=next_stall_var, justify="center", width=10)
-    next_stall_entry.pack(side="left", padx=5)
+    abmelden_button = ttk.Button(table_frame, text="Abmelden", command=lambda: back_to_start(), bootstyle=DANGER)
+    abmelden_button.pack(pady=10)
 
-    def update_stall(event=None):
-        global nextstall, next_stall_var
-        try:
-            new_stall = next_stall_var
-            nextstall = new_stall
-            next_stall_label.config(text=str(nextstall))
-        except ValueError:
-            next_stall_var = str(nextstall)
-
-    next_stall_entry.bind("<Return>", update_stall)
     daten_abfragen_und_fuellen(scrollable_frame, dieKW, dasjahr, derstall)
-def refresh_table_frame():
-    global table_frame, entries, entry_count
-    setglobs()
-    table_frame.destroy()  # Entfernt den alten Frame
-    table_frame = ttk.Frame(root1, bootstyle="light")  # Erstellt einen neuen Frame
-    table_frame.pack(fill="both", expand=True)  # Neu positionieren
-    entries = []
-    entry_count = 0
-    build_ui2()  # Setzt das UI neu auf
-
-
 
 # Kundenliste Seite
 customer_frame = ttk.Frame(root1, bootstyle="light")

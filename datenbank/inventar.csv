@@ -1,3 +1,9 @@
 ,id,kw,stall,jahr,weiss,braun,anmerkung
 0,1,7,Stall 2,2024,2,4,sdfgWRGAERHBY
 1,2,2,Stall 1,2025,0,0,0
+2,3,6,Stall 2,2024,2,0,0
+3,4,6,Stall 4,2024,0,0,0
+4,5,4,Stall 2,2025,20,10,0
+5,6,2,Stall 2,2025,0,0,0
+6,7,2,Stall 2,2024,0,0,0
+7,8,3,Test,2025,10,10,0

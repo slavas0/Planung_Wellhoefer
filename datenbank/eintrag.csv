@@ -1,4 +1,7 @@
 ,id,stall,kw,jahr,name,telefonnummer,braune,weise,verfahren,preis,bemerkung,checked,archived
 0,2,Stall 2,7,2024,slava,911,1,4,abc,,,0,0
-1,4,Stall 2,7,2024,nicht slava,912,0,0,asdf,,,1,0
-2,5,Stall 2,7,2024,mischa,110,1,1,,,nichts2,0,0
+1,4,Stall 2,7,2024,nicht slava,912,0,0,asdf,,,0,0
+2,14,Stall 2,6,2024,slava,911,1,1,,,,1,0
+3,15,Stall 4,6,2024,slava,9,,,,,,0,1
+4,16,Stall 2,4,2025,werwqewer,ere,10,10,hgh,ghgh,ghgh,0,0
+5,17,Test,3,2025,klöä#,00,9,9,äkl,10,kkk,1,0
