@@ -1,10 +1,9 @@
 import sqlite3
-from tkinter import Text, Canvas, messagebox
+from tkinter import Text, Canvas, messagebox, PhotoImage
 from ttkbootstrap import ttk, Window, SUCCESS, INFO, DANGER, SECONDARY
 from screeninfo import get_monitors
 from datetime import datetime, timedelta
 import re
-from tkinter import PhotoImage
 
 # Globale Variablen
 username = "nutzer"
@@ -55,7 +54,6 @@ def start_function():
         print(f"Neuer Nutzer {user_input} hinzugefügt mit Datum {current_date}")
     stall, kw, jahr = "Stall 1", 8, 2024
     kw, jahr = aktuelle_kw_jahr()
-    print(kw, jahr)
     sql = "SELECT stall, kw, jahr FROM letztereintrag WHERE nutzer = ? ORDER BY id DESC LIMIT 1"
     cursor.execute(sql, (user_input,))
     result = cursor.fetchone()
@@ -84,6 +82,7 @@ def back_to_start():
     product_frame.pack_forget()
     start_frame.pack(fill="both", expand=True)
 def close_program():
+    conn.close()
     root1.destroy()
 def load_user_list(tree):
     try:
@@ -122,82 +121,220 @@ def delete_nutzer():
             print(f"Kein Nutzer mit dem Namen '{user_input}' gefunden.")
     except Exception as e:
         print(f"Ein Fehler ist aufgetreten: {e}")
+# Funktion zum Laden aller Produkte aus der Datenbank
+def lade_produkte():
+    cursor.execute("SELECT * FROM produkte")
+    produkte = cursor.fetchall()
+    return produkte
+
+# Funktion zum Hinzufügen oder Bearbeiten eines Produkts
 def produkt_speichern(tree):
     artikelnummer = artikelnummer_entry.get()
     name = name_entry.get()
     preis = preis_entry.get()
     bemerkung = bemerkung_text.get("1.0", "end-1c")
-    tree.insert("", "end", values=(artikelnummer, name, preis, bemerkung))
-    clear_form()
 
+    if not artikelnummer or not name or not preis:
+        messagebox.showerror("Fehler", "Artikelnummer, Name und Preis sind Pflichtfelder.")
+        return
+
+    try:
+        preis = float(preis)
+    except ValueError:
+        messagebox.showerror("Fehler", "Preis muss eine gültige Zahl sein.")
+        return
+    # Prüfen, ob das Produkt bereits existiert
+    cursor.execute("SELECT * FROM produkte WHERE Artikelnummer = ?", (artikelnummer,))
+    produkt = cursor.fetchone()
+
+    if produkt:
+        # Bestehendes Produkt bearbeiten
+        cursor.execute("UPDATE produkte SET Name = ?, Preis = ?, Bemerkung = ? WHERE Artikelnummer = ?",
+                       (name, preis, bemerkung, artikelnummer))
+        messagebox.showinfo("Erfolg", f"Produkt {artikelnummer} wurde aktualisiert!")
+    else:
+        # Neues Produkt hinzufügen
+        cursor.execute("INSERT INTO produkte (Artikelnummer, Name, Preis, Bemerkung) VALUES (?, ?, ?, ?)",
+                       (artikelnummer, name, preis, bemerkung))
+        messagebox.showinfo("Erfolg", f"Produkt {name} wurde hinzugefügt!")
+
+    conn.commit()
+    aktualisiere_tabelle(tree)
+
+# Funktion zum Aktualisieren der Produktliste in der Treeview
+def aktualisiere_tabelle(tree):
+    # Vorhandene Einträge in der Treeview entfernen
+    for item in tree.get_children():
+        tree.delete(item)
+    produkte = lade_produkte()  # Laden der Daten aus der Datenbank
+    # Neue Daten hinzufügen
+    for produkt in produkte:
+        tree.insert(
+            "",
+            "end",
+            values=(produkt[1], produkt[2], produkt[3], produkt[4])
+        )
+# Funktion zum Laden der Daten eines Produkts in die Eingabefelder
 def produkt_bearbeiten(tree):
-    selected_item = tree.selection()
-    if selected_item:
-        artikelnummer = artikelnummer_entry.get()
-        name = name_entry.get()
-        preis = preis_entry.get()
-        bemerkung = bemerkung_text.get("1.0", "end-1c")
-        tree.item(selected_item, values=(artikelnummer, name, preis, bemerkung))
+    try:
+        selected_item = tree.selection()[0]
+        values = tree.item(selected_item, "values")
+
+        artikelnummer_entry.delete(0, "end")
+        artikelnummer_entry.insert(0, values[0])
+
+        name_entry.delete(0, "end")
+        name_entry.insert(0, values[1])
+
+        preis_entry.delete(0, "end")
+        preis_entry.insert(0, values[2])
+
+        bemerkung_text.delete("1.0", "end")
+        bemerkung_text.insert("1.0", values[3])
+    except IndexError:
+        messagebox.showerror("Fehler", "Bitte wähle ein Produkt aus, das bearbeitet werden soll.")
+
+# Funktion zum Löschen eines Produkts
+def produkt_loeschen(tree):
+    try:
+        selected_item = tree.selection()[0]
+        values = tree.item(selected_item, "values")
+
+        # Produkt aus der Datenbank entfernen
+        cursor.execute("DELETE FROM produkte WHERE Artikelnummer = ?", (values[0],))
+        conn.commit()
+
+        # Treeview aktualisieren
+        aktualisiere_tabelle(tree)
+        messagebox.showinfo("Erfolg", f"Produkt {values[1]} wurde gelöscht!")
+    except IndexError:
+        messagebox.showerror("Fehler", "Bitte wähle ein Produkt aus, das gelöscht werden soll.")
+# Funktion zum Aktualisieren der Kundenliste in der TreeView
+def aktualisiere_ktabelle(tree, daten):
+    tree.delete(*tree.get_children())
+    for kunde in daten:
+        tree.insert("", "end", values=(
+            kunde["id"], kunde["Name"], kunde["PLZ"], kunde["Adresse"],
+            kunde["Hausnummer"], kunde["Stadt"], kunde["Telefonnummer"],
+            kunde["Email"], kunde["Bemerkung"]))
+
+# Funktion zum Speichern oder Aktualisieren eines Kunden
+def kunde_speichern(tree):
+    daten = {
+        "id": id_entry.get(),
+        "Name": kname_entry.get(),
+        "PLZ": plz_entry.get(),
+        "Adresse": adresse_entry.get(),
+        "Hausnummer": hausnummer_entry.get(),
+        "Stadt": stadt_entry.get(),
+        "Telefonnummer": telefon_entry.get(),
+        "Email": email_entry.get(),
+        "Bemerkung": kbemerkung_text.get("1.0", "end-1c")
+    }
+
+    if not daten["Name"] and not daten["Telefonnummer"]:
+        messagebox.showerror("Fehler", "Name oder Telefonnummer sind Pflichtfelder.")
+        return
+
+    try:
+        if daten["id"]:  # Update vorhandenen Kunden
+            cursor.execute(
+                """
+                UPDATE kunden SET Name=?, PLZ=?, Adresse=?, Hausnummer=?, Stadt=?,
+                Telefonnummer=?, Email=?, Bemerkung=? WHERE id=?
+                """,
+                (daten["Name"], daten["PLZ"], daten["Adresse"], daten["Hausnummer"],
+                 daten["Stadt"], daten["Telefonnummer"], daten["Email"], daten["Bemerkung"], daten["id"])
+            )
+        else:  # Neuen Kunden hinzufügen
+            cursor.execute(
+                """
+                INSERT INTO kunden (Name, PLZ, Adresse, Hausnummer, Stadt, Telefonnummer, Email, Bemerkung)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (daten["Name"], daten["PLZ"], daten["Adresse"], daten["Hausnummer"], daten["Stadt"],
+                 daten["Telefonnummer"], daten["Email"], daten["Bemerkung"])
+            )
+
+        conn.commit()
+        aktualisiere_ktabelle(tree, lade_kundendaten())
+        messagebox.showinfo("Erfolg", f"Kunde {daten['Name']} wurde gespeichert!")
         clear_form()
 
-def produkt_loeschen(tree):
-    selected_item = tree.selection()
-    if selected_item:
-        tree.delete(selected_item)
+    except sqlite3.Error as e:
+        messagebox.showerror("Fehler", f"Fehler beim Speichern der Daten: {e}")
 
-def kunde_speichern(tree):
-    name = name_entry.get()
-    plz = plz_entry.get()
-    adresse = adresse_entry.get()
-    hausnummer = hausnummer_entry.get()
-    stadt = stadt_entry.get()
-    telefon = telefon_entry.get()
-    email = email_entry.get()
-    bemerkung = bemerkung_text.get("1.0", "end-1c")
-    tree.insert("", "end", values=(name, plz, adresse, hausnummer, stadt, telefon, email, bemerkung))
-    clear_form()
-
+# Funktion zum Auswählen eines Kunden aus der Tabelle
 def kunde_bearbeiten(tree):
     selected_item = tree.selection()
-    if selected_item:
-        name = name_entry.get()
-        plz = plz_entry.get()
-        adresse = adresse_entry.get()
-        hausnummer = hausnummer_entry.get()
-        stadt = stadt_entry.get()
-        telefon = telefon_entry.get()
-        email = email_entry.get()
-        bemerkung = bemerkung_text.get("1.0", "end-1c")
-        tree.item(selected_item, values=(name, plz, adresse, hausnummer, stadt, telefon, email, bemerkung))
-        clear_form()
+    if not selected_item:
+        messagebox.showerror("Fehler", "Bitte wählen Sie einen Kunden aus der Liste aus.")
+        return
 
+    kunde = tree.item(selected_item)["values"]
+    id_entry.delete(0, "end")
+    id_entry.insert(0, kunde[0])  # ID in das unsichtbare Feld schreiben
+    kname_entry.delete(0, "end")
+    kname_entry.insert(0, kunde[1])
+    plz_entry.delete(0, "end")
+    plz_entry.insert(0, kunde[2])
+    adresse_entry.delete(0, "end")
+    adresse_entry.insert(0, kunde[3])
+    hausnummer_entry.delete(0, "end")
+    hausnummer_entry.insert(0, kunde[4])
+    stadt_entry.delete(0, "end")
+    stadt_entry.insert(0, kunde[5])
+    telefon_entry.delete(0, "end")
+    telefon_entry.insert(0, kunde[6])
+    email_entry.delete(0, "end")
+    email_entry.insert(0, kunde[7])
+    kbemerkung_text.delete("1.0", "end")
+    kbemerkung_text.insert("1.0", kunde[8])
+# Funktion zum Löschen eines Kunden
 def kunde_loeschen(tree):
     selected_item = tree.selection()
-    if selected_item:
-        tree.delete(selected_item)
+    if not selected_item:
+        messagebox.showerror("Fehler", "Bitte wählen Sie einen Kunden aus der Liste aus.")
+        return
 
+    kunde_id = tree.item(selected_item[0], "values")[0]
+    try:
+        cursor.execute("DELETE FROM kunden WHERE id = ?", (kunde_id,))
+        conn.commit()
+        aktualisiere_ktabelle(tree, lade_kundendaten())
+        messagebox.showinfo("Erfolg", f"Kunde mit ID {kunde_id} wurde gelöscht.")
+    except sqlite3.Error as e:
+        messagebox.showerror("Fehler", f"Fehler beim Löschen des Kunden: {e}")
+# Funktion zum Abrufen der Kundendaten aus der Datenbank
 def lade_kundendaten():
-    return [("Kunde 1", "12345", "Musterstraße", "1", "Musterstadt", "0123456789", "kunde1@example.com", "Bemerkung 1")]
-
-def aktualisiere_tabelle(tree, daten=None):
-    for i in tree.get_children():
-        tree.delete(i)
-    if daten:
-        for datensatz in daten:
-            tree.insert("", "end", values=datensatz)
-
+    try:
+        cursor.execute("SELECT * FROM kunden")
+        daten = [
+            {
+                "id": eintrag[0], "Name": eintrag[1], "PLZ": eintrag[2], "Adresse": eintrag[3],
+                "Hausnummer": eintrag[4], "Stadt": eintrag[5], "Telefonnummer": eintrag[6],
+                "Email": eintrag[7], "Bemerkung": eintrag[8]
+            }
+            for eintrag in cursor.fetchall()
+        ]
+        return daten
+    except sqlite3.Error as e:
+        messagebox.showerror("Fehler", f"Fehler beim Laden der Daten: {e}")
+        return []
 def clear_form():
     artikelnummer_entry.delete(0, "end")
     name_entry.delete(0, "end")
     preis_entry.delete(0, "end")
-    bemerkung_text.delete("1.0", "end")
+    kbemerkung_text.delete("1.0", "end")
     plz_entry.delete(0, "end")
     adresse_entry.delete(0, "end")
     hausnummer_entry.delete(0, "end")
     stadt_entry.delete(0, "end")
     telefon_entry.delete(0, "end")
     email_entry.delete(0, "end")
-
+    kname_entry.delete(0, "end")
+    artikelnummer_entry.delete(0, "end")
+    bemerkung_text.delete("1.0", "end")
 def lastitemsdef():
     global lastitems
     sql_insert = "INSERT INTO letztereintrag (nutzer, stall, kw, jahr) VALUES (?, ?, ?, ?)"
@@ -217,8 +354,9 @@ def lastitemsdef():
     global allestalle
     for i in cursor.fetchall():
         allestalle.append(i[0])
-    print(lastitems)
+def tabitemsdef():
 
+    return
 def kalenderwoche_daten(jahr, kw):
     vierten_januar = datetime(jahr, 1, 4)
     start_der_ersten_kw = vierten_januar - timedelta(days=vierten_januar.weekday())
@@ -261,6 +399,7 @@ def daten_abfragen_und_fuellen(scrollable_frame, kw, jahr, stall):
     daten = cursor.fetchall()
     if daten:
         for row in daten:
+            print(row)
             eintrag_hinzufuegen(scrollable_frame, row[7])
             aktueller_eintrag = entries[-1]
             aktueller_eintrag["name"].insert(0, row[0])
@@ -288,11 +427,24 @@ def create_headers(scrollable_frame):
         label = ttk.Label(scrollable_frame, text=header, font=("Arial", 12, "bold"), background="#f5f5f5")
         label.grid(row=2, column=i, padx=10, pady=10)
 
-
-def check_entry(frame, id, numb, row):
+def check_check_entry(frame, id, numb, row, check):
+    cursor.execute("SELECT checked FROM eintrag WHERE id = ?", (id,))
+    result = cursor.fetchone()
+    print(result[0])
+    if result[0]:
+        check_entry(frame, id, numb, row, 0)
+def check_entry(frame, id, numb, row, check):
+    exist = 0
+    if id == 'none':
+        exist = 0
+    else:
+        exist = 1
     # Überprüfen, ob bereits ein Hintergrund-Label existiert
     if hasattr(frame, f"hintergrund_label_{row}"):
         # Wenn das Label existiert, entfernen wir es
+        if exist and check:
+            cursor.execute("UPDATE eintrag SET checked = 0 WHERE id = ?", (id,))
+            conn.commit()
         hintergrund_label = getattr(frame, f"hintergrund_label_{row}")
         hintergrund_label.destroy()
         delattr(frame, f"hintergrund_label_{row}")
@@ -300,9 +452,15 @@ def check_entry(frame, id, numb, row):
         # Setze die Hintergrundfarbe der Widgets zurück
         for widget in frame.grid_slaves(row=row):
             if isinstance(widget, (ttk.Entry, ttk.Label, ttk.Button)):
-                widget.configure(background="")  # Setze den Standardhintergrund zurück
+                try:
+                    widget.configure(background="")  # Setze den Standardhintergrund zurück
+                except:
+                    pass  # Ignoriere den Fehler, falls `background` nicht unterstützt wird
     else:
         # Wenn kein Label existiert, erstellen wir ein neues
+        if exist and check:
+            cursor.execute("UPDATE eintrag SET checked = 1 WHERE id = ?", (id,))
+            conn.commit()
         hintergrund_label = ttk.Label(frame, background="#d0f0c0")
         hintergrund_label.grid(row=row, column=0, columnspan=10, sticky="nsew", pady=5)
         hintergrund_label.lower()  # Hinter die anderen Widgets verschieben
@@ -312,7 +470,25 @@ def check_entry(frame, id, numb, row):
         # Setze die Hintergrundfarbe der Widgets auf grün
         for widget in frame.grid_slaves(row=row):
             if isinstance(widget, (ttk.Entry, ttk.Label, ttk.Button)):
-                widget.configure(background="#d0f0c0")  # Grüner Hintergrund
+                try:
+                    widget.configure(background="#d0f0c0")  # Grüner Hintergrund
+                except:
+                    pass  # Ignoriere den Fehler, falls `background` nicht unterstützt wird
+
+def del_entry(frame, id, numb, row, check):
+    hintergrund_label = ttk.Label(frame, background="#ffcccb")
+    hintergrund_label.grid(row=row, column=0, columnspan=10, sticky="nsew", pady=5)
+    hintergrund_label.lower()  # Hinter die anderen Widgets verschieben
+    # Speichern des Labels als Attribut des Frames
+    setattr(frame, f"hintergrund_dellabel_{row}", hintergrund_label)
+
+    # Setze die Hintergrundfarbe der Widgets auf grün
+    for widget in frame.grid_slaves(row=row):
+        if isinstance(widget, (ttk.Entry, ttk.Label, ttk.Button)):
+            try:
+                widget.configure(background="#ffcccb")  # Grüner Hintergrund
+            except:
+                pass  # Ignoriere den Fehler, falls `background` nicht unterstützt wird
 
 
 def eintrag_hinzufuegen(scrollable_frame, id):
@@ -342,14 +518,16 @@ def eintrag_hinzufuegen(scrollable_frame, id):
     number_label = ttk.Label(scrollable_frame, text=numb)
     number_label.grid(row=row_offset, column=7, padx=5, pady=5)
     number_label.grid_remove()
-    delete_button = ttk.Button(scrollable_frame, text="Löschen", command=lambda: delete_entry(scrollable_frame, id, numb), bootstyle="DANGER")
+    delete_button = ttk.Button(scrollable_frame, text="Löschen", command=lambda: delete_entry(scrollable_frame, id, numb, row_offset), bootstyle="DANGER")
     delete_button.grid(row=row_offset, column=8, padx=5, pady=5)
-    # Häkchen-Icon laden
-    check_icon = PhotoImage(file="checkmark.png")  # Pfad zum Häkchen-Icon
-    check_button = ttk.Button(scrollable_frame, image=check_icon, command=lambda: check_entry(scrollable_frame, id, numb, row_offset), bootstyle="SUCCESS")
-    check_button.image = check_icon  # Referenz halten, um Garbage Collection zu verhindern
-    check_button.grid(row=row_offset, column=9, padx=5, pady=5)
-
+    if not id == "none":
+        # Häkchen-Icon laden
+        check_icon = PhotoImage(file="checkmark.png")  # Pfad zum Häkchen-Icon
+        check_button = ttk.Button(scrollable_frame, image=check_icon, command=lambda: check_entry(scrollable_frame, id, numb, row_offset, 1), bootstyle="SUCCESS")
+        check_button.image = check_icon  # Referenz halten, um Garbage Collection zu verhindern
+        check_button.grid(row=row_offset, column=9, padx=5, pady=5)
+    if not id == "none":
+        check_check_entry(scrollable_frame, id, numb, row_offset, 0)
     entries.append({
         "id": id_label,
         "number": number_label,
@@ -359,8 +537,7 @@ def eintrag_hinzufuegen(scrollable_frame, id):
         "weiss": weiss_entry,
         "verhalten": verhalten_entry,
         "preis": preis_entry,
-        "bemerkung": bemerkung_entry,
-        "checked": check_button
+        "bemerkung": bemerkung_entry
     })
 
 def eingang_indb_speichern(kw, stall, jahr):
@@ -382,6 +559,10 @@ def speichern_daten(textfeld_braun, textfeld_weiss, textfeld3):
     eingang_indb_speichern(dieKW, derstall, dasjahr)
     try:
         for entry in entries:
+            if entry["id"].winfo_exists():
+                id = entry["id"].cget("text")
+            else:
+                print("Fehler: ID-Label existiert nicht mehr.")
             id = entry["id"].cget("text")
             name = entry["name"].get()
             telefon = entry["telefon"].get()
@@ -392,7 +573,6 @@ def speichern_daten(textfeld_braun, textfeld_weiss, textfeld3):
             bemerkung = entry["bemerkung"].get()
             #checked = entry["checked"].cget()
             if id != 'none':
-                print("B")
                 sql = f"UPDATE eintrag SET name = '{name}', stall = '{derstall}', kw = {int(dieKW)}, jahr = {int(dasjahr)}, telefonnummer = '{telefon}', braune = {braun}, weise = {weiss}, verfahren = '{verhalten}', preis = '{preis}', bemerkung = '{bemerkung}' WHERE id = {id};"
                 cursor.execute("SELECT id FROM eintrag WHERE id = ?", (id,))
                 isnone = cursor.fetchone()
@@ -403,14 +583,12 @@ def speichern_daten(textfeld_braun, textfeld_weiss, textfeld3):
                     cursor.execute(sql)
                 conn.commit()
             else:
-                print("A")
                 if (name + telefon + str(braun) + str(weiss) + verhalten + preis + bemerkung) != "":
                     sql = "INSERT INTO eintrag (stall, kw, jahr, name, telefonnummer, braune, weise, verfahren, preis, bemerkung) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
                     cursor.execute(sql, (derstall, dieKW, dasjahr, name, telefon, braun, weiss, verhalten, preis, bemerkung))
                     sql_max_id = "SELECT MAX(id) FROM eintrag WHERE stall = ? AND kw = ? AND jahr = ?"
                     cursor.execute(sql_max_id, (derstall, dieKW, dasjahr))
                     max_id = cursor.fetchone()[0]
-                    print(max_id)
                     entry["id"].config(text=max_id)
                     id_regist[int(entry["number"].cget("text"))] = max_id
             print(f"Speichere: Name={name}, Telefon={telefon}, Braun={braun}, Weiß={weiss}, Verhalten={verhalten}, Preis={preis}, Bemerkung={bemerkung} in {derstall} am {dieKW} {dasjahr}")
@@ -429,7 +607,7 @@ def create_save_button(root, textfeld_braun, textfeld_weiss, textfeld3):
     speichern_button = ttk.Button(root, text="Speichern", command=lambda: speichern_daten(textfeld_braun, textfeld_weiss, textfeld3), bootstyle="primary")
     speichern_button.pack(pady=10)
 
-def delete_entry(scrollable_frame, entry_id, numb):
+def delete_entry(scrollable_frame, entry_id, numb, row):
     if entry_id == 'none':
         entry_id = id_regist[numb]
         if entry_id == 0:
@@ -438,13 +616,14 @@ def delete_entry(scrollable_frame, entry_id, numb):
     cursor.execute("SELECT id FROM eintrag WHERE id = ?", (entry_id,))
     result = cursor.fetchone()
     if result:
+        del_entry(scrollable_frame, entry_id, numb, row, 0)
         cursor.execute("DELETE FROM eintrag WHERE id = ?", (entry_id,))
         conn.commit()
         messagebox.showinfo("Löschen", f"Eintrag mit ID {entry_id} wurde gelöscht.")
         remove_entry_from_gui(numb)
     else:
         messagebox.showwarning("Nicht gefunden", f"Eintrag mit ID {entry_id} existiert nicht.")
-    update_scrollregion(scrollable_frame)
+    #update_scrollregion(scrollable_frame)
 
 def remove_entry_from_gui(numb):
     for entry in entries:
@@ -514,8 +693,8 @@ def create_footer(root):
             else:
                 weiss_ubrig_label.config(background="#ffcccb")
         else:
-            braun_ubrig_label.config(text="Braun: 0")
-            weiss_ubrig_label.config(text="Weiß: 0")
+            braun_ubrig_label.config(text="Braun: 0", background="#ffcccb")
+            weiss_ubrig_label.config(text="Weiß: 0", background="#ffcccb")
 
     berechne_ubrig()
 
@@ -640,7 +819,6 @@ def build_ui2():
             nexttime[1] -= 1
         elif kwtemp > 53:
             nexttime[1] += 1
-        print(nexttime)
         next_kw_label.config(text=str(nexttime[0]))
     def next_stall(change):
         global nextstall
@@ -735,13 +913,14 @@ def build_ui2():
 
     next_stall_entry.bind("<Return>", update_stall)
     daten_abfragen_und_fuellen(scrollable_frame, dieKW, dasjahr, derstall)
-    print(entries)
 def refresh_table_frame():
-    global table_frame
+    global table_frame, entries, entry_count
     setglobs()
     table_frame.destroy()  # Entfernt den alten Frame
     table_frame = ttk.Frame(root1, bootstyle="light")  # Erstellt einen neuen Frame
     table_frame.pack(fill="both", expand=True)  # Neu positionieren
+    entries = []
+    entry_count = 0
     build_ui2()  # Setzt das UI neu auf
 
 
@@ -752,18 +931,33 @@ customer_frame = ttk.Frame(root1, bootstyle="light")
 customer_list_label = ttk.Label(customer_frame, text="Kundenverwaltung", font=("Helvetica", 14, "bold"), background="#f5f5f5")
 customer_list_label.pack(pady=15)
 
-customer_tree = ttk.Treeview(customer_frame, columns=("name", "plz", "adresse", "hausnummer", "stadt", "telefon", "email", "bemerkung"), show="headings", height=10, bootstyle="light")
+customer_tree = ttk.Treeview(customer_frame, columns=("name", "plz", "adresse", "hausnummer", "stadt", "telefon", "email", "bemerkung"), show="headings", bootstyle="light")
 for col in customer_tree["columns"]:
     customer_tree.heading(col, text=col.capitalize())
     customer_tree.column(col, width=100)
 
+list_frame = ttk.Frame(customer_frame, padding=10)
+list_frame.pack(fill="both", expand=True)
+
+columns = ("id", "Name", "PLZ", "Adresse", "Hausnummer", "Stadt", "Telefonnummer", "Email", "Bemerkung")
+customer_tree = ttk.Treeview(list_frame, columns=columns, show="headings")
+for col in columns:
+    customer_tree.heading(col, text=col)
+    customer_tree.column(col, width=100)
+
 customer_tree.pack(fill="both", expand=True)
+aktualisiere_ktabelle(customer_tree, lade_kundendaten())
+
 
 back_button_customer = ttk.Button(customer_frame, text="Zurück", bootstyle="warning", command=back_to_start)
 back_button_customer.pack(pady=10)
 
 form_frame = ttk.Frame(customer_frame, padding=10)
 form_frame.pack(fill="x", pady=5)
+
+id_entry = ttk.Entry(form_frame, width=15)
+id_entry.grid(row=0, column=5)
+id_entry.grid_remove()
 
 labels = ["Name*", "PLZ", "Adresse", "Hausnummer", "Stadt", "Telefonnummer*", "Email", "Bemerkung"]
 kentries = {}
@@ -775,10 +969,10 @@ for i, label in enumerate(labels[:7]):
 
 bemerkung_label = ttk.Label(form_frame, text="Bemerkung:")
 bemerkung_label.grid(row=4, column=0, sticky="nw", padx=5, pady=5)
-bemerkung_text = Text(form_frame, width=30, height=4)
-bemerkung_text.grid(row=4, column=1, padx=5, pady=5)
+kbemerkung_text = Text(form_frame, width=30, height=4)
+kbemerkung_text.grid(row=4, column=1, padx=5, pady=5)
 
-(name_entry, plz_entry, adresse_entry, hausnummer_entry, stadt_entry, telefon_entry, email_entry) = (
+(kname_entry, plz_entry, adresse_entry, hausnummer_entry, stadt_entry, telefon_entry, email_entry) = (
     kentries["Name*"], kentries["PLZ"], kentries["Adresse"], kentries["Hausnummer"],
     kentries["Stadt"], kentries["Telefonnummer*"], kentries["Email"]
 )
@@ -788,66 +982,70 @@ button_frame.pack(fill="x", pady=5)
 
 ttk.Button(button_frame, text="Speichern", command=lambda: kunde_speichern(customer_tree), bootstyle=SUCCESS).pack(side="left", padx=10)
 ttk.Button(button_frame, text="Bearbeiten", command=lambda: kunde_bearbeiten(customer_tree), bootstyle=INFO).pack(side="left", padx=10)
-ttk.Button(button_frame, text="Schließen", command=lambda: root1.destroy(), bootstyle=SECONDARY).pack(side="right", padx=10)
+ttk.Button(button_frame, text="Leeren", command=lambda: clear_form(), bootstyle=DANGER).pack(side="left", padx=10)
 ttk.Button(button_frame, text="Löschen", command=lambda: kunde_loeschen(customer_tree), bootstyle=DANGER).pack(side="right", padx=10)
+
+
 
 # Produktliste Seite
 product_frame = ttk.Frame(root1, bootstyle="light")
-
 product_list_label = ttk.Label(product_frame, text="Produktverwaltung", font=("Helvetica", 14, "bold"), background="#f5f5f5")
 product_list_label.pack(pady=15)
 
 columns = ("Artikelnummer", "Name", "Preis", "Bemerkung")
-tree = ttk.Treeview(product_frame, columns=columns, show="headings", bootstyle="light")
+prodtree = ttk.Treeview(product_frame, columns=columns, show="headings", bootstyle="light")
 for col in columns:
-    tree.heading(col, text=col)
-    tree.column(col, width=150)
+    prodtree.heading(col, text=col)
+    prodtree.column(col, width=150)
 
-tree.pack(fill="both", expand=True, pady=10)
+prodtree.pack(fill="both", expand=True, pady=10)
 
-tree_scrollbar = ttk.Scrollbar(product_frame, orient="vertical", command=tree.yview)
-tree.configure(yscrollcommand=tree_scrollbar.set)
-tree_scrollbar.pack(side="right", fill="y")
+prodtree_scrollbar = ttk.Scrollbar(product_frame, orient="vertical", command=prodtree.yview)
+prodtree.configure(yscrollcommand=prodtree_scrollbar.set)
+prodtree_scrollbar.pack(side="right", fill="y")
 
 back_button_product = ttk.Button(product_frame, text="Zurück", bootstyle="warning", command=back_to_start)
 back_button_product.pack(pady=10)
 
-form_frame = ttk.Frame(product_frame, padding=10)
-form_frame.pack(fill="x", pady=10)
+prod_form_frame = ttk.Frame(product_frame, padding=10)
+prod_form_frame.pack(fill="x", pady=10)
 
-artikelnummer_label = ttk.Label(form_frame, text="Artikelnummer*:", font=("Arial", 12))
+artikelnummer_label = ttk.Label(prod_form_frame, text="Artikelnummer*:", font=("Arial", 12))
 artikelnummer_label.grid(row=0, column=0, sticky="w", pady=5, padx=5)
-artikelnummer_entry = ttk.Entry(form_frame, width=30)
+artikelnummer_entry = ttk.Entry(prod_form_frame, width=30)
 artikelnummer_entry.grid(row=0, column=1, pady=5)
 
-name_label = ttk.Label(form_frame, text="Name*:", font=("Arial", 12))
+name_label = ttk.Label(prod_form_frame, text="Name*:", font=("Arial", 12))
 name_label.grid(row=1, column=0, sticky="w", pady=5, padx=5)
-name_entry = ttk.Entry(form_frame, width=30)
+name_entry = ttk.Entry(prod_form_frame, width=30)
 name_entry.grid(row=1, column=1, pady=5)
 
-preis_label = ttk.Label(form_frame, text="Preis*:", font=("Arial", 12))
+preis_label = ttk.Label(prod_form_frame, text="Preis*:", font=("Arial", 12))
 preis_label.grid(row=2, column=0, sticky="w", pady=5, padx=5)
-preis_entry = ttk.Entry(form_frame, width=30)
+preis_entry = ttk.Entry(prod_form_frame, width=30)
 preis_entry.grid(row=2, column=1, pady=5)
 
-bemerkung_label = ttk.Label(form_frame, text="Bemerkung:", font=("Arial", 12))
+bemerkung_label = ttk.Label(prod_form_frame, text="Bemerkung:", font=("Arial", 12))
 bemerkung_label.grid(row=3, column=0, sticky="nw", pady=5, padx=5)
-bemerkung_text = Text(form_frame, width=40, height=5)
+bemerkung_text = Text(prod_form_frame, width=40, height=5)
 bemerkung_text.grid(row=3, column=1, pady=5)
+
+aktualisiere_tabelle(prodtree)
 
 button_frame = ttk.Frame(product_frame, padding=10)
 button_frame.pack(fill="x", pady=10)
 
-add_button = ttk.Button(button_frame, text="Speichern", command=lambda: produkt_speichern(tree), bootstyle=SUCCESS)
+add_button = ttk.Button(button_frame, text="Speichern", command=lambda: produkt_speichern(prodtree), bootstyle=SUCCESS)
 add_button.pack(side="left", padx=10)
 
-edit_button = ttk.Button(button_frame, text="Bearbeiten", command=lambda: produkt_bearbeiten(tree), bootstyle=INFO)
+edit_button = ttk.Button(button_frame, text="Bearbeiten", command=lambda: produkt_bearbeiten(prodtree), bootstyle=INFO)
 edit_button.pack(side="left", padx=10)
 
-delete_button = ttk.Button(button_frame, text="Löschen", command=lambda: produkt_loeschen(tree), bootstyle=DANGER)
+clear_button = ttk.Button(button_frame, text="Leeren", command=lambda: clear_form(), bootstyle=DANGER)
+clear_button.pack(side="left", padx=10)
+
+delete_button = ttk.Button(button_frame, text="Löschen", command=lambda: produkt_loeschen(prodtree), bootstyle=DANGER)
 delete_button.pack(side="right", padx=10)
 
-aktualisiere_tabelle(tree)
 
 root1.mainloop()
-conn.close()

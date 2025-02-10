@@ -84,7 +84,6 @@ def create_inventar_table():
 #create_inventar_table()
 
 
-
 conn.commit()
 
 #sql = "CREATE TABLE produkte (    Artikelnummer TEXT PRIMARY KEY,    Name TEXT NOT NULL,    Preis REAL NOT NULL,    Bemerkung TEXT);"
